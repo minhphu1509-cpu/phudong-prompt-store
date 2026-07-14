@@ -1,0 +1,373 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ArrowRight, Bookmark, Check, ChevronDown, Copy, ExternalLink, Flame, Github,
+  Grid2X2, Heart, Menu, Search, SlidersHorizontal, Sparkles, WandSparkles, X,
+} from 'lucide-react'
+import rawPrompts from './data/prompts.json'
+import type { PromptItem } from './types'
+
+const prompts = rawPrompts as PromptItem[]
+const PAGE_SIZE = 18
+
+const normalize = (value: string) => value
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/đ/g, 'd')
+  .toLowerCase()
+
+const extractArguments = (prompt: string) => {
+  const variables = new Map<string, string>()
+  const pattern = /\{argument name=["']([^"']+)["'] default=["']([^"']*)["']\}/g
+  for (const match of prompt.matchAll(pattern)) variables.set(match[1], match[2])
+  return [...variables.entries()].map(([name, defaultValue]) => ({ name, defaultValue }))
+}
+
+const applyArguments = (prompt: string, values: Record<string, string>) => prompt.replace(
+  /\{argument name=["']([^"']+)["'] default=["']([^"']*)["']\}/g,
+  (_match, name, defaultValue) => values[name] || defaultValue,
+)
+
+function BrandMark() {
+  return <span className="brand-mark" aria-hidden="true"><span>P</span></span>
+}
+
+function VisualPlaceholder({ item, large = false }: { item: PromptItem; large?: boolean }) {
+  return (
+    <span className={`visual-placeholder ${large ? 'large' : ''}`} aria-hidden="true">
+      <span className="visual-orbit" />
+      <WandSparkles size={large ? 42 : 28} />
+      <small>{item.category}</small>
+      <strong>{item.title.slice(0, 2).toUpperCase()}</strong>
+    </span>
+  )
+}
+
+type HeaderProps = {
+  query: string
+  setQuery: (value: string) => void
+  favoriteCount: number
+  showFavorites: boolean
+  setShowFavorites: (value: boolean) => void
+  onMenu: () => void
+}
+
+function Header({ query, setQuery, favoriteCount, showFavorites, setShowFavorites, onMenu }: HeaderProps) {
+  return (
+    <header className="site-header">
+      <button className="icon-button mobile-menu" onClick={onMenu} aria-label="Mở bộ lọc"><Menu size={20} /></button>
+      <a className="brand" href="#top" aria-label="PhuDong Prompt Store - Trang chủ">
+        <BrandMark />
+        <span><strong>PhuDong</strong><small>Prompt Store</small></span>
+      </a>
+      <label className="header-search">
+        <Search size={18} />
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Tìm prompt, phong cách, tác giả..."
+          aria-label="Tìm kiếm prompt"
+        />
+        <kbd>⌘ K</kbd>
+      </label>
+      <nav className="header-actions" aria-label="Điều hướng chính">
+        <a href="#gallery">Khám phá</a>
+        <a href="#about">Giới thiệu</a>
+        <button className={`favorites-button ${showFavorites ? 'active' : ''}`} onClick={() => setShowFavorites(!showFavorites)}>
+          <Heart size={17} fill={showFavorites ? 'currentColor' : 'none'} />
+          <span>Đã lưu</span><b>{favoriteCount}</b>
+        </button>
+      </nav>
+    </header>
+  )
+}
+
+type SidebarProps = {
+  categories: Array<[string, number]>
+  selectedCategory: string
+  setSelectedCategory: (value: string) => void
+  open: boolean
+  onClose: () => void
+}
+
+function Sidebar({ categories, selectedCategory, setSelectedCategory, open, onClose }: SidebarProps) {
+  const choose = (category: string) => { setSelectedCategory(category); onClose() }
+  return (
+    <>
+      <button className={`sidebar-scrim ${open ? 'visible' : ''}`} onClick={onClose} aria-label="Đóng bộ lọc" />
+      <aside className={`sidebar ${open ? 'open' : ''}`}>
+        <div className="sidebar-heading">
+          <span>Danh mục</span>
+          <button className="icon-button sidebar-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>
+        </div>
+        <button className={`category-button ${selectedCategory === 'Tất cả' ? 'active' : ''}`} onClick={() => choose('Tất cả')}>
+          <span className="category-icon"><Grid2X2 size={16} /></span><span>Tất cả prompt</span><b>{prompts.length}</b>
+        </button>
+        {categories.map(([category, count]) => (
+          <button key={category} className={`category-button ${selectedCategory === category ? 'active' : ''}`} onClick={() => choose(category)}>
+            <span className="category-dot" /><span>{category}</span><b>{count}</b>
+          </button>
+        ))}
+        <div className="sidebar-card">
+          <Sparkles size={20} /><strong>Góc sáng tạo</strong>
+          <p>Thay đổi các biến trong prompt để tạo phiên bản riêng của bạn.</p>
+          <a href="#gallery">Khám phá ngay <ArrowRight size={14} /></a>
+        </div>
+      </aside>
+    </>
+  )
+}
+
+function Hero({ featured, onOpen }: { featured: PromptItem; onOpen: (prompt: PromptItem) => void }) {
+  return (
+    <section className="hero" id="top">
+      <div className="hero-copy">
+        <div className="eyebrow"><Sparkles size={15} /> Thư viện cảm hứng AI cho người Việt</div>
+        <h1>Biến ý tưởng thành<br /><em>hình ảnh ấn tượng.</em></h1>
+        <p>Prompt được tuyển chọn, phân loại rõ ràng và sẵn sàng tùy biến cho GPT Image, kiến trúc, đồ họa và nội dung sáng tạo.</p>
+        <div className="hero-actions">
+          <a className="primary-button" href="#gallery">Khám phá prompt <ArrowRight size={17} /></a>
+          <button className="secondary-button" onClick={() => onOpen(featured)}><WandSparkles size={17} /> Xem prompt nổi bật</button>
+        </div>
+        <div className="hero-stats">
+          <div><strong>{prompts.length}</strong><span>prompt tuyển chọn</span></div><i />
+          <div><strong>{new Set(prompts.map((item) => item.category)).size}</strong><span>danh mục sáng tạo</span></div><i />
+          <div><strong>CC BY</strong><span>có thể tùy biến</span></div>
+        </div>
+      </div>
+      <button className="featured-visual" onClick={() => onOpen(featured)} aria-label={`Xem ${featured.title}`}>
+        {featured.images[0]
+          ? <img src={featured.images[0]} alt={featured.title} />
+          : <VisualPlaceholder item={featured} large />}
+        <span className="featured-badge"><Flame size={14} /> Nổi bật tuần này</span>
+        <span className="visual-caption">
+          <small>{featured.category}</small><strong>{featured.title}</strong><span>Xem chi tiết <ArrowRight size={15} /></span>
+        </span>
+      </button>
+    </section>
+  )
+}
+
+type PromptCardProps = {
+  item: PromptItem
+  favorite: boolean
+  onFavorite: (id: string) => void
+  onOpen: (prompt: PromptItem) => void
+  onCopy: (text: string) => void
+}
+
+function PromptCard({ item, favorite, onFavorite, onOpen, onCopy }: PromptCardProps) {
+  return (
+    <article className="prompt-card">
+      <button className="card-image" onClick={() => onOpen(item)} aria-label={`Xem ${item.title}`}>
+        {item.images[0]
+          ? <img src={item.images[0]} alt={item.title} loading="lazy" onError={(event) => { event.currentTarget.style.visibility = 'hidden' }} />
+          : <VisualPlaceholder item={item} />}
+        <span className="card-overlay"><span>Xem prompt <ArrowRight size={15} /></span></span>
+        {item.featured && <span className="mini-featured"><Sparkles size={12} /> Chọn lọc</span>}
+      </button>
+      <div className="card-body">
+        <div className="card-meta"><span>{item.category}</span><span>•</span><span>{item.language.toUpperCase()}</span></div>
+        <button className="card-title" onClick={() => onOpen(item)}>{item.title}</button>
+        <p>{item.description}</p>
+        <div className="card-footer">
+          <span className="author">{item.author?.name ?? 'Cộng đồng'}</span>
+          <div>
+            <button onClick={() => onCopy(item.prompt)} aria-label="Sao chép prompt" title="Sao chép prompt"><Copy size={16} /></button>
+            <button className={favorite ? 'favorite' : ''} onClick={() => onFavorite(item.id)} aria-label={favorite ? 'Bỏ lưu prompt' : 'Lưu prompt'} title={favorite ? 'Bỏ lưu' : 'Lưu prompt'}>
+              <Bookmark size={17} fill={favorite ? 'currentColor' : 'none'} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
+  )
+}
+
+type PromptDialogProps = {
+  item: PromptItem
+  favorite: boolean
+  onFavorite: (id: string) => void
+  onClose: () => void
+  onCopy: (text: string) => void
+}
+
+function PromptDialog({ item, favorite, onFavorite, onClose, onCopy }: PromptDialogProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null)
+  const variables = useMemo(() => extractArguments(item.prompt), [item.prompt])
+  const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(variables.map((v) => [v.name, v.defaultValue])))
+  const finalPrompt = useMemo(() => applyArguments(item.prompt, values), [item.prompt, values])
+
+  useEffect(() => {
+    if (dialogRef.current && !dialogRef.current.open) dialogRef.current.showModal()
+    document.body.classList.add('modal-open')
+    return () => document.body.classList.remove('modal-open')
+  }, [])
+
+  return (
+    <dialog ref={dialogRef} className="prompt-dialog" onClose={onClose}>
+      <button className="dialog-scrim" onClick={() => dialogRef.current?.close()} aria-label="Đóng" />
+      <div className="dialog-panel">
+        <button className="dialog-close" onClick={() => dialogRef.current?.close()} aria-label="Đóng"><X size={20} /></button>
+        <div className="dialog-media">
+          {item.images[0]
+            ? <img src={item.images[0]} alt={item.title} />
+            : <VisualPlaceholder item={item} large />}
+          {item.images.length > 1 && <div className="image-count">1 / {item.images.length} ảnh</div>}
+        </div>
+        <div className="dialog-content">
+          <div className="dialog-labels">
+            <span>{item.category}</span>
+            {item.featured && <span className="highlight"><Sparkles size={12} /> Nổi bật</span>}
+          </div>
+          <h2>{item.title}</h2>
+          <p className="dialog-description">{item.description}</p>
+          <div className="dialog-byline"><span>Đóng góp bởi <strong>{item.author?.name ?? 'Cộng đồng'}</strong></span><span>{item.published}</span></div>
+
+          {variables.length > 0 && (
+            <section className="variables-panel">
+              <div className="section-title"><span><SlidersHorizontal size={16} /> Tùy biến nhanh</span><small>{variables.length} biến</small></div>
+              <div className="variable-grid">
+                {variables.slice(0, 8).map((variable) => (
+                  <label key={variable.name}><span>{variable.name}</span>
+                    <input value={values[variable.name] ?? ''} onChange={(event) => setValues({ ...values, [variable.name]: event.target.value })} />
+                  </label>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section className="prompt-panel">
+            <div className="section-title"><span><WandSparkles size={16} /> Prompt hoàn chỉnh</span><small>{finalPrompt.length.toLocaleString('vi-VN')} ký tự</small></div>
+            <pre>{finalPrompt}</pre>
+          </section>
+
+          <div className="dialog-actions">
+            <button className="primary-button" onClick={() => onCopy(finalPrompt)}><Copy size={17} /> Sao chép prompt</button>
+            <button className={`save-button ${favorite ? 'active' : ''}`} onClick={() => onFavorite(item.id)}>
+              <Bookmark size={17} fill={favorite ? 'currentColor' : 'none'} />{favorite ? 'Đã lưu' : 'Lưu prompt'}
+            </button>
+            {item.source?.url && <a className="source-button" href={item.source.url} target="_blank" rel="noreferrer">Nguồn <ExternalLink size={15} /></a>}
+          </div>
+        </div>
+      </div>
+    </dialog>
+  )
+}
+
+function App() {
+  const [query, setQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('Tất cả')
+  const [sort, setSort] = useState('featured')
+  const [selected, setSelected] = useState<PromptItem | null>(null)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showFavorites, setShowFavorites] = useState(false)
+  const [toast, setToast] = useState('')
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('phudong-favorites') ?? '[]')) }
+    catch { return new Set() }
+  })
+
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const item of prompts) counts.set(item.category, (counts.get(item.category) ?? 0) + 1)
+    return [...counts.entries()].sort((a, b) => b[1] - a[1])
+  }, [])
+
+  const filtered = useMemo(() => {
+    const needle = normalize(query.trim())
+    const result = prompts.filter((item) => {
+      if (showFavorites && !favorites.has(item.id)) return false
+      if (selectedCategory !== 'Tất cả' && item.category !== selectedCategory) return false
+      if (!needle) return true
+      return normalize([item.title, item.category, item.description, item.prompt, item.author?.name].join(' ')).includes(needle)
+    })
+    return [...result].sort((a, b) => {
+      if (sort === 'name') return a.title.localeCompare(b.title, 'vi')
+      if (sort === 'newest') return b.id.localeCompare(a.id)
+      return Number(b.featured) - Number(a.featured)
+    })
+  }, [favorites, query, selectedCategory, showFavorites, sort])
+
+  useEffect(() => setVisibleCount(PAGE_SIZE), [query, selectedCategory, showFavorites, sort])
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        document.querySelector<HTMLInputElement>('.header-search input')?.focus()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
+  const toggleFavorite = (id: string) => setFavorites((current) => {
+    const next = new Set(current)
+    if (next.has(id)) next.delete(id); else next.add(id)
+    localStorage.setItem('phudong-favorites', JSON.stringify([...next]))
+    return next
+  })
+
+  const copyPrompt = async (text: string) => {
+    await navigator.clipboard.writeText(text)
+    setToast('Đã sao chép prompt')
+    window.setTimeout(() => setToast(''), 1800)
+  }
+
+  const featured = prompts.find((item) => item.featured) ?? prompts[0]
+
+  return (
+    <div className="app-shell">
+      <Header query={query} setQuery={setQuery} favoriteCount={favorites.size} showFavorites={showFavorites} setShowFavorites={setShowFavorites} onMenu={() => setSidebarOpen(true)} />
+      <Sidebar categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <main className="main-content">
+        <Hero featured={featured} onOpen={setSelected} />
+        <section className="gallery-section" id="gallery">
+          <div className="gallery-heading">
+            <div>
+              <span className="section-kicker">Bộ sưu tập tuyển chọn</span>
+              <h2>{showFavorites ? 'Prompt đã lưu' : selectedCategory === 'Tất cả' ? 'Khám phá prompt' : selectedCategory}</h2>
+              <p>{filtered.length} kết quả phù hợp với lựa chọn của bạn</p>
+            </div>
+            <label className="sort-select"><span>Sắp xếp:</span>
+              <select value={sort} onChange={(event) => setSort(event.target.value)}>
+                <option value="featured">Nổi bật trước</option><option value="newest">Mới nhất</option><option value="name">Tên A–Z</option>
+              </select><ChevronDown size={15} />
+            </label>
+          </div>
+
+          {filtered.length > 0 ? <>
+            <div className="prompt-grid">
+              {filtered.slice(0, visibleCount).map((item) => (
+                <PromptCard key={item.id} item={item} favorite={favorites.has(item.id)} onFavorite={toggleFavorite} onOpen={setSelected} onCopy={copyPrompt} />
+              ))}
+            </div>
+            {visibleCount < filtered.length && <button className="load-more" onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}>Xem thêm prompt <ArrowRight size={16} /></button>}
+          </> : (
+            <div className="empty-state"><Search size={28} /><h3>Chưa tìm thấy prompt phù hợp</h3><p>Thử từ khóa khác hoặc xóa bộ lọc hiện tại.</p>
+              <button onClick={() => { setQuery(''); setSelectedCategory('Tất cả'); setShowFavorites(false) }}>Xóa bộ lọc</button>
+            </div>
+          )}
+        </section>
+
+        <section className="about-banner" id="about">
+          <div><span className="section-kicker">PhuDong Creative Lab</span><h2>Một prompt tốt là điểm khởi đầu, không phải giới hạn.</h2>
+            <p>Tìm cảm hứng, thay biến nhanh và lưu lại bộ công thức hình ảnh phù hợp với quy trình sáng tạo của bạn.</p>
+          </div>
+          <a href="#gallery" className="primary-button">Bắt đầu khám phá <ArrowRight size={17} /></a>
+        </section>
+      </main>
+
+      <footer>
+        <div className="footer-brand"><BrandMark /><span><strong>PhuDong Prompt Store</strong><small>Made for Vietnamese creators.</small></span></div>
+        <p>Nội dung được chuyển thể từ{' '}<a href="https://github.com/YouMind-OpenLab/awesome-gpt-image-2" target="_blank" rel="noreferrer">YouMind OpenLab <Github size={13} /></a>{' '}theo giấy phép <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>.</p>
+        <span>© 2026 PhuDong AI Studio</span>
+      </footer>
+
+      {selected && <PromptDialog item={selected} favorite={favorites.has(selected.id)} onFavorite={toggleFavorite} onClose={() => setSelected(null)} onCopy={copyPrompt} />}
+      <div className={`toast ${toast ? 'visible' : ''}`} role="status"><Check size={16} /> {toast}</div>
+    </div>
+  )
+}
+
+export default App

@@ -1,7 +1,7 @@
 # PhuDong Prompt Store
 
-Website thư viện prompt AI được xây dựng bằng React, TypeScript và Vite. Dữ liệu được
-trích xuất tự động từ `README_vi-VN.md` của repository nguồn.
+Website thư viện prompt AI nguyên bản dành cho kiến trúc, nội thất, đồ họa thông tin,
+marketing và chỉnh sửa ảnh, được xây dựng bằng React, TypeScript và Vite.
 
 ## Chạy trên máy
 
@@ -19,11 +19,6 @@ npm run build
 npm run preview
 ```
 
-## Cập nhật dữ liệu
-
-Sau khi cập nhật `README_vi-VN.md`, chạy `npm run generate:data`. Script cũng được
-chạy tự động trước `dev` và `build`.
-
 ## Tính năng
 
 - Tìm kiếm toàn văn, hỗ trợ tiếng Việt không dấu.
@@ -34,4 +29,4 @@ chạy tự động trước `dev` và `build`.
 - Modal chi tiết, nguồn và tác giả.
 - Responsive cho desktop, tablet và điện thoại.
 
-Xem [NOTICE.md](./NOTICE.md) để biết thông tin nguồn và giấy phép.
+Xem [NOTICE.md](./NOTICE.md) để biết thông tin nguồn cảm hứng và giấy phép.
