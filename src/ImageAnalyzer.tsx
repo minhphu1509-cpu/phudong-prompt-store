@@ -128,6 +128,7 @@ export default function ImageAnalyzer({ onCopy }: { onCopy: (text: string) => vo
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [response, setResponse] = useState<AnalysisResponse | null>(null)
+  const [providerTests, setProviderTests] = useState<Partial<Record<ProviderId, { loading: boolean; ok?: boolean; message?: string }>>>({})
 
   useEffect(() => {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(providers))
@@ -137,6 +138,22 @@ export default function ImageAnalyzer({ onCopy }: { onCopy: (text: string) => vo
 
   const updateProvider = (id: ProviderId, patch: Partial<ProviderState[ProviderId]>) => {
     setProviders((current) => ({ ...current, [id]: { ...current[id], ...patch } }))
+  }
+
+  const testProvider = async (id: ProviderId) => {
+    const current = providers[id]
+    if (!current.apiKey.trim()) {
+      setProviderTests((tests) => ({ ...tests, [id]: { loading: false, ok: false, message: 'Hãy nhập API key trước' } }))
+      return
+    }
+    setProviderTests((tests) => ({ ...tests, [id]: { loading: true } }))
+    try {
+      const request = await fetch('/api/test-provider', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider: id, model: current.model.trim(), apiKey: current.apiKey.trim() }) })
+      const payload = await request.json() as { ok?: boolean; message?: string; error?: string }
+      setProviderTests((tests) => ({ ...tests, [id]: { loading: false, ok: request.ok && payload.ok, message: payload.message || payload.error || 'Không thể kiểm tra kết nối' } }))
+    } catch {
+      setProviderTests((tests) => ({ ...tests, [id]: { loading: false, ok: false, message: 'Không gọi được API kiểm tra trên Vercel' } }))
+    }
   }
 
   const handleFile = async (file?: File) => {
@@ -242,6 +259,10 @@ export default function ImageAnalyzer({ onCopy }: { onCopy: (text: string) => vo
               <label className="provider-switch"><input type="checkbox" checked={providers[provider.id].enabled} onChange={(event) => updateProvider(provider.id, { enabled: event.target.checked })} /><span /><b>{provider.accent}</b><strong>{provider.name}</strong>{providers[provider.id].apiKey && <CheckCircle2 size={15} />}</label>
               <label><span>API key</span><input type="password" autoComplete="off" spellCheck={false} placeholder={provider.keyHint} value={providers[provider.id].apiKey} onChange={(event) => updateProvider(provider.id, { apiKey: event.target.value })} /></label>
               <label><span>Model</span><input type="text" list={`models-${provider.id}`} spellCheck={false} value={providers[provider.id].model} onChange={(event) => updateProvider(provider.id, { model: event.target.value })} /><datalist id={`models-${provider.id}`}>{MODEL_SUGGESTIONS[provider.id].map((model) => <option key={model} value={model} />)}</datalist></label>
+              <div className={`provider-test ${providerTests[provider.id]?.ok === true ? 'success' : providerTests[provider.id]?.ok === false ? 'failed' : ''}`}>
+                <button onClick={() => void testProvider(provider.id)} disabled={providerTests[provider.id]?.loading}>{providerTests[provider.id]?.loading ? <LoaderCircle className="spinning" size={13} /> : <RefreshCw size={13} />} Kiểm tra API</button>
+                {providerTests[provider.id]?.message && <span>{providerTests[provider.id]?.message}</span>}
+              </div>
             </article>)}</div>
             <p className="provider-note"><LockKeyhole size={14} /> Không lưu key vào GitHub, Vercel hay localStorage. Đóng tab sẽ xóa cấu hình phiên.</p>
           </div>}

@@ -30,6 +30,8 @@ const MODEL_PATTERN = /^[a-zA-Z0-9._:/-]{1,120}$/
 
 const providerError = (provider: ProviderId, error: unknown) => {
   const code = error instanceof Error ? error.message : 'unknown'
+  if (error instanceof Error && error.name === 'AbortError') return 'Kết nối quá thời gian 48 giây'
+  if (error instanceof TypeError || /fetch|network|ENOTFOUND|ECONN/i.test(code)) return 'Vercel không kết nối được tới máy chủ nhà cung cấp'
   if (code === 'provider_400') return 'Yêu cầu hoặc cấu hình model không được hỗ trợ'
   if (code === 'provider_401') return 'API key không hợp lệ hoặc đã hết hiệu lực'
   if (code === 'provider_403') return 'API key chưa có quyền dùng model hoặc khu vực bị hạn chế'

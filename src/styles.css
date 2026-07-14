@@ -188,6 +188,7 @@ button { color: inherit; } a { color: inherit; text-decoration: none; } img { di
 .provider-list { display: grid; gap: 7px; }
 .provider-list article { display: grid; grid-template-columns: minmax(160px,.85fr) minmax(180px,1.35fr) minmax(140px,1fr); gap: 9px; align-items: end; padding: 10px; border: 1px solid rgba(255,255,255,.06); border-radius: 10px; background: #151517; opacity: .72; }
 .provider-list article.configured { border-color: rgba(99,203,140,.16); opacity: 1; }
+.provider-test { grid-column: 1/-1; display: flex; align-items: center; gap: 9px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.055); }.provider-test button { display: inline-flex; align-items: center; gap: 5px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #1d1d20; color: #aaa7a3; font-size: 7px; cursor: pointer; }.provider-test button:disabled { opacity: .6; cursor: wait; }.provider-test > span { color: #85817e; font-size: 7px; line-height: 1.4; }.provider-test.success > span { color: #69c98e; }.provider-test.failed > span { color: #ee7866; }
 .provider-switch { min-height: 37px; display: flex; align-items: center; gap: 7px; cursor: pointer; }
 .provider-switch input { position: absolute; opacity: 0; pointer-events: none; }
 .provider-switch > span { width: 27px; height: 15px; position: relative; flex: 0 0 auto; border-radius: 99px; background: #343437; transition: .2s; }
