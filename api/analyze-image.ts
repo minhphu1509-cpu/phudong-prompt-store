@@ -37,14 +37,14 @@ function normalizeResult(value: unknown) {
   return {
     summary: field(root.summary, 'Phân tích bối cảnh và ánh sáng từ ảnh tham chiếu'),
     context: {
-      spaceType: field(context.spaceType),
-      locationStyle: field(context.locationStyle),
-      architecture: field(context.architecture),
-      materials: field(context.materials),
-      landscape: field(context.landscape),
+      sceneType: field(context.sceneType),
+      setting: field(context.setting),
+      backgroundElements: field(context.backgroundElements),
+      groundCondition: field(context.groundCondition),
+      vegetation: field(context.vegetation),
       weather: field(context.weather),
       timeOfDay: field(context.timeOfDay),
-      camera: field(context.camera),
+      atmosphere: field(context.atmosphere),
     },
     lighting: {
       primarySource: field(lighting.primarySource),
@@ -59,9 +59,8 @@ function normalizeResult(value: unknown) {
     promptEn: field(root.promptEn, 'Unable to generate an English prompt.'),
     negativePrompt: field(root.negativePrompt, 'low quality, distorted perspective, inconsistent lighting, overexposed, underexposed'),
     recommendedSettings: {
-      aspectRatio: field(settings.aspectRatio, '16:9'),
-      lens: field(settings.lens, '35mm'),
-      mood: field(settings.mood, 'cinematic'),
+      aspectRatio: field(settings.aspectRatio, 'Theo ảnh nguồn cần render'),
+      mood: field(settings.mood, 'Tự nhiên'),
     },
   }
 }
@@ -78,32 +77,36 @@ function extractJson(text: string) {
 
 function buildInstruction(mode: AnalysisMode) {
   const focus = mode === 'context'
-    ? 'Ưu tiên phân tích bối cảnh, không gian, vật liệu, kiến trúc và góc máy.'
+    ? 'Chỉ phân tích môi trường, địa điểm, hậu cảnh, mặt nền, cây xanh, thời tiết, thời điểm và không khí.'
     : mode === 'lighting'
       ? 'Ưu tiên phân tích nguồn sáng, hướng sáng, độ mềm, màu sắc, tương phản, bóng đổ và không khí.'
       : 'Phân tích cân bằng cả bối cảnh lẫn hệ ánh sáng.'
 
-  return `Bạn là chuyên gia art direction, nhiếp ảnh và diễn họa kiến trúc. Hãy đọc ảnh tham chiếu một cách khách quan và tạo prompt tái dựng bối cảnh cùng ánh sáng. ${focus}
+  return `Bạn là chuyên gia art direction về BỐI CẢNH và ÁNH SÁNG. Ảnh đính kèm chỉ là ảnh tham chiếu môi trường; nó có thể là bất kỳ loại ảnh nào và không phải thiết kế cần render. Hãy trích xuất riêng bối cảnh cùng ánh sáng để áp dụng cho một ảnh phác thảo hoặc screenshot 3D khác của người dùng. ${focus}
 
 Quy tắc:
 - Chỉ mô tả những gì nhìn thấy hoặc có thể suy luận hợp lý; ghi "Không xác định" nếu thiếu bằng chứng.
 - Không nhận diện danh tính, không suy đoán thuộc tính nhạy cảm của bất kỳ người nào trong ảnh.
-- Prompt phải tập trung vào không gian, vật liệu, môi trường, bố cục, góc máy và ánh sáng; đủ chi tiết để dùng với công cụ tạo ảnh.
+- TUYỆT ĐỐI KHÔNG phân tích, mô tả hoặc sao chép hình khối kiến trúc, mặt đứng, số tầng, hệ cửa, kết cấu, thiết kế nội thất, đồ nội thất, vật liệu công trình, vật liệu nội thất, chủ thể chính, góc camera hoặc tiêu cự của ảnh tham chiếu.
+- Nếu ảnh có công trình, nội thất, người, xe hoặc sản phẩm, bỏ qua thiết kế và hình dáng của chúng; chỉ đọc môi trường bao quanh và cách ánh sáng tác động lên toàn cảnh.
+- promptVi và promptEn phải mở đầu bằng yêu cầu giữ nguyên tuyệt đối geometry, tỷ lệ, kết cấu, hệ cửa, nội thất chính và camera của ẢNH NGUỒN CẦN RENDER do người dùng cung cấp riêng.
+- Chỉ chuyển bối cảnh, thời tiết, thời điểm, không khí, nguồn sáng, hướng sáng, độ mềm, nhiệt màu, tương phản và bóng đổ từ ảnh tham chiếu.
+- Không yêu cầu mô hình tạo ảnh tái dựng công trình hoặc chủ thể trong ảnh tham chiếu.
 - promptVi viết tiếng Việt tự nhiên; promptEn là bản tiếng Anh tối ưu cho image generation, không phải bản dịch máy từng chữ.
 - Chỉ trả về một JSON hợp lệ, không markdown, không giải thích ngoài JSON.
 
 JSON schema bắt buộc:
 {
-  "summary": "một câu tóm tắt",
+  "summary": "một câu tóm tắt bối cảnh và ánh sáng, không nhắc công trình hoặc chủ thể",
   "context": {
-    "spaceType": "loại không gian",
-    "locationStyle": "phong cách/địa điểm",
-    "architecture": "đặc điểm kiến trúc",
-    "materials": "vật liệu và bề mặt",
-    "landscape": "cảnh quan và vật thể nền",
+    "sceneType": "loại bối cảnh: đô thị, thiên nhiên, trong nhà, ngoài trời...",
+    "setting": "địa điểm hoặc môi trường tổng quát",
+    "backgroundElements": "các thành phần hậu cảnh không thuộc chủ thể chính",
+    "groundCondition": "tình trạng mặt nền, đường, sân hoặc sàn; không mô tả vật liệu công trình",
+    "vegetation": "cây xanh và mật độ",
     "weather": "thời tiết",
     "timeOfDay": "thời điểm trong ngày",
-    "camera": "bố cục, góc máy, tiêu cự ước lượng"
+    "atmosphere": "độ ẩm, sương, bụi, độ trong và chiều sâu không khí"
   },
   "lighting": {
     "primarySource": "nguồn sáng chính và phụ",
@@ -114,12 +117,11 @@ JSON schema bắt buộc:
     "shadows": "hình thái bóng đổ",
     "atmosphere": "sương, bụi, glow, volumetric hoặc không khí"
   },
-  "promptVi": "prompt tiếng Việt hoàn chỉnh",
-  "promptEn": "English production-ready image prompt",
-  "negativePrompt": "negative prompt bằng tiếng Anh",
+  "promptVi": "prompt tiếng Việt chỉ chuyển bối cảnh và ánh sáng, đồng thời khóa thiết kế ảnh nguồn cần render",
+  "promptEn": "English prompt transferring context and lighting only while locking the separate source design",
+  "negativePrompt": "negative prompt tiếng Anh gồm redesign, changed geometry, changed camera, copied reference subject/materials và lỗi hình ảnh",
   "recommendedSettings": {
-    "aspectRatio": "tỷ lệ khung hình",
-    "lens": "ống kính gợi ý",
+    "aspectRatio": "giữ theo ảnh nguồn cần render",
     "mood": "mood ngắn gọn"
   }
 }`

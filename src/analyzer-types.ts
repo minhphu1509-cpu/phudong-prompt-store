@@ -11,14 +11,14 @@ export type ProviderRequest = {
 export type SceneAnalysis = {
   summary: string
   context: {
-    spaceType: string
-    locationStyle: string
-    architecture: string
-    materials: string
-    landscape: string
+    sceneType: string
+    setting: string
+    backgroundElements: string
+    groundCondition: string
+    vegetation: string
     weather: string
     timeOfDay: string
-    camera: string
+    atmosphere: string
   }
   lighting: {
     primarySource: string
@@ -34,7 +34,6 @@ export type SceneAnalysis = {
   negativePrompt: string
   recommendedSettings: {
     aspectRatio: string
-    lens: string
     mood: string
   }
 }

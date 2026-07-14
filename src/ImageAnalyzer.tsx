@@ -89,14 +89,14 @@ function ResultBlock({ title, text, onCopy, highlighted = false }: { title: stri
 
 function DetailGrid({ analysis }: { analysis: SceneAnalysis }) {
   const details = [
-    ['Loại không gian', analysis.context.spaceType],
-    ['Phong cách', analysis.context.locationStyle],
-    ['Kiến trúc', analysis.context.architecture],
-    ['Vật liệu', analysis.context.materials],
-    ['Cảnh quan', analysis.context.landscape],
+    ['Loại bối cảnh', analysis.context.sceneType],
+    ['Địa điểm / môi trường', analysis.context.setting],
+    ['Thành phần hậu cảnh', analysis.context.backgroundElements],
+    ['Mặt nền', analysis.context.groundCondition],
+    ['Cây xanh', analysis.context.vegetation],
     ['Thời tiết', analysis.context.weather],
     ['Thời điểm', analysis.context.timeOfDay],
-    ['Góc máy', analysis.context.camera],
+    ['Không khí bối cảnh', analysis.context.atmosphere],
     ['Nguồn sáng', analysis.lighting.primarySource],
     ['Hướng sáng', analysis.lighting.direction],
     ['Độ mềm', analysis.lighting.quality],
@@ -213,8 +213,8 @@ export default function ImageAnalyzer({ onCopy }: { onCopy: (text: string) => vo
   return (
     <section className="analyzer-section" id="analyzer">
       <div className="analyzer-heading">
-        <div><span className="section-kicker"><Sparkles size={14} /> AI Prompt Studio</span><h2>Tạo prompt từ bối cảnh thật</h2>
-          <p>Tải ảnh tham chiếu để AI bóc tách không gian, vật liệu, góc máy và hệ ánh sáng thành prompt hoàn chỉnh.</p></div>
+        <div><span className="section-kicker"><Sparkles size={14} /> Context & Lighting Studio</span><h2>Trích xuất bối cảnh và ánh sáng</h2>
+          <p>Tải bất kỳ ảnh tham chiếu nào. AI chỉ đọc môi trường và hệ ánh sáng — không phân tích công trình, nội thất, vật liệu hay hình khối trong ảnh.</p></div>
         <div className="privacy-pill"><LockKeyhole size={15} /><span><strong>BYOK riêng tư</strong>Key chỉ lưu trong phiên này</span></div>
       </div>
 
@@ -253,7 +253,7 @@ export default function ImageAnalyzer({ onCopy }: { onCopy: (text: string) => vo
             </> : <button onClick={() => inputRef.current?.click()} disabled={processingImage}>
               {processingImage ? <LoaderCircle className="spinning" size={34} /> : <ImagePlus size={34} />}
               <strong>{processingImage ? 'Đang tối ưu ảnh…' : 'Thả ảnh vào đây hoặc chọn từ thiết bị'}</strong>
-              <span>JPG, PNG, WebP · tối đa 10 MB · tự động nén trước khi gửi</span>
+              <span>Mọi loại ảnh · chỉ dùng để tham chiếu bối cảnh và ánh sáng</span>
             </button>}
           </div>
 
@@ -264,14 +264,14 @@ export default function ImageAnalyzer({ onCopy }: { onCopy: (text: string) => vo
         </div>
 
         <div className={`analyzer-output ${response ? 'has-result' : ''}`}>
-          {!response ? <div className="output-placeholder"><span><Sparkles size={27} /></span><h3>Kết quả sẽ xuất hiện ở đây</h3><p>AI tạo bản mô tả có cấu trúc, prompt tiếng Việt, tiếng Anh và negative prompt.</p><div><i /> Phân tích bối cảnh<i /> Nhận diện ánh sáng<i /> Viết prompt</div></div> : <>
+          {!response ? <div className="output-placeholder"><span><Sparkles size={27} /></span><h3>Dùng ảnh như mẫu môi trường</h3><p>Công trình hoặc chủ thể trong ảnh sẽ được bỏ qua. Kết quả chỉ chuyển bối cảnh và ánh sáng sang prompt render.</p><div><i /> Đọc môi trường<i /> Trích xuất ánh sáng<i /> Bảo vệ thiết kế nguồn</div></div> : <>
             <div className="output-heading"><div><span>Kết quả phân tích</span><h3>{response.result.summary}</h3></div><div className="model-used"><CheckCircle2 size={15} /><span><strong>{PROVIDERS.find((item) => item.id === response.providerUsed)?.name}</strong>{response.modelUsed}</span></div></div>
             {response.attempts.length > 1 && <div className="fallback-trace"><RefreshCw size={14} /> Đã chuyển mô hình tự động: {response.attempts.map((attempt) => PROVIDERS.find((item) => item.id === attempt.provider)?.name).join(' → ')}</div>}
             <DetailGrid analysis={response.result} />
             <ResultBlock title="Prompt tiếng Việt" text={response.result.promptVi} onCopy={onCopy} highlighted />
             <ResultBlock title="Prompt tiếng Anh" text={response.result.promptEn} onCopy={onCopy} />
             <ResultBlock title="Negative prompt" text={response.result.negativePrompt} onCopy={onCopy} />
-            <div className="recommended-settings"><span>Tỷ lệ <strong>{response.result.recommendedSettings.aspectRatio}</strong></span><span>Ống kính <strong>{response.result.recommendedSettings.lens}</strong></span><span>Mood <strong>{response.result.recommendedSettings.mood}</strong></span></div>
+            <div className="recommended-settings"><span>Tỷ lệ tham khảo <strong>{response.result.recommendedSettings.aspectRatio}</strong></span><span>Mood <strong>{response.result.recommendedSettings.mood}</strong></span></div>
           </>}
         </div>
       </div>
