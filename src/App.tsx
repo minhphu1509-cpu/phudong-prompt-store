@@ -4,11 +4,12 @@ import {
   Grid2X2, Heart, Images, Menu, MessageSquareText, Search, SlidersHorizontal, Sparkles, WandSparkles, X,
 } from 'lucide-react'
 import rawPrompts from './data/prompts.json'
+import { additionalPrompts } from './data/additional-prompts'
 import ImageAnalyzer from './ImageAnalyzer'
 import RenderStudio from './RenderStudio'
 import type { PromptItem } from './types'
 
-const prompts = rawPrompts as PromptItem[]
+const prompts = [...rawPrompts as PromptItem[], ...additionalPrompts]
 const PAGE_SIZE = 18
 
 const normalize = (value: string) => value
