@@ -5,6 +5,8 @@ Thư viện prompt AI trực quan dành cho cộng đồng sáng tạo Việt Na
 ## Tính năng
 
 - Duyệt, tìm kiếm, lọc và lưu prompt yêu thích.
+- Thư viện 200 prompt chuyên ngành, chia đều cho kiến trúc ngoại thất, nội thất, cảnh quan và quy hoạch đô thị.
+- Bao phủ 200 loại hình không gian/công trình và 50 phong cách thiết kế từ bản địa, di sản đến hiện đại, sinh thái và tương lai.
 - Tùy biến biến số trong prompt và sao chép nhanh.
 - Tải ảnh JPG, PNG hoặc WebP để phân tích không gian, vật liệu, góc máy và ánh sáng.
 - Tạo prompt tiếng Việt, tiếng Anh, negative prompt và thiết lập hình ảnh gợi ý.
@@ -26,6 +28,12 @@ Lệnh kiểm tra bản production:
 
 ```bash
 npm run build
+```
+
+Tạo lại bộ thư viện kiến trúc theo cấu hình nguồn:
+
+```bash
+npm run generate:architecture-library
 ```
 
 API phân tích ảnh nằm tại `api/analyze-image.ts` và được Vercel triển khai tự động cùng ứng dụng Vite.
