@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "generate:architecture-library": "node scripts/generate-architecture-library.mjs",
+    "generate:visual-communication-library": "node scripts/generate-visual-communication-library.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
