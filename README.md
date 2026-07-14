@@ -13,6 +13,8 @@ Thư viện prompt AI trực quan dành cho cộng đồng sáng tạo Việt Na
 - Tạo prompt tiếng Việt, tiếng Anh, negative prompt và thiết lập hình ảnh gợi ý.
 - BYOK: người dùng nhập khóa API OpenAI, Google Gemini hoặc Anthropic Claude của riêng họ.
 - Tự động xoay tua và chuyển sang nhà cung cấp tiếp theo khi một mô hình không phản hồi.
+- Render Studio chuyển sketch, clay render và screenshot SketchUp/Revit/3ds Max/Rhino thành phối cảnh thực tế bằng OpenAI GPT Image hoặc Google Gemini.
+- Bộ cấu hình render gồm 4 chuyên ngành, 120 phong cách, 40 loại công trình, 40 bối cảnh, 20 kịch bản ánh sáng và 20 góc camera; mọi nhóm đều có lựa chọn tiêu chuẩn.
 
 ## Quyền riêng tư của API key
 
@@ -38,7 +40,7 @@ npm run generate:architecture-library
 npm run generate:visual-communication-library
 ```
 
-API phân tích ảnh nằm tại `api/analyze-image.ts` và được Vercel triển khai tự động cùng ứng dụng Vite.
+API phân tích ảnh nằm tại `api/analyze-image.ts`; API tạo phối cảnh nằm tại `api/generate-render.ts`. Cả hai được Vercel triển khai tự động cùng ứng dụng Vite.
 
 ## Nguồn cảm hứng
 
