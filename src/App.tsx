@@ -12,6 +12,7 @@ import type { PromptItem } from './types'
 
 const prompts = [...rawPrompts as PromptItem[], ...additionalPrompts]
 const PAGE_SIZE = 18
+type AppView = 'home' | 'tools' | 'library'
 
 const normalize = (value: string) => value
   .normalize('NFD')
@@ -89,16 +90,18 @@ type HeaderProps = {
   showFavorites: boolean
   setShowFavorites: (value: boolean) => void
   onMenu: () => void
+  activeView: AppView
+  onNavigate: (view: AppView) => void
 }
 
-function Header({ query, setQuery, favoriteCount, showFavorites, setShowFavorites, onMenu }: HeaderProps) {
+function Header({ query, setQuery, favoriteCount, showFavorites, setShowFavorites, onMenu, activeView, onNavigate }: HeaderProps) {
   return (
     <header className="site-header">
       <button className="icon-button mobile-menu" onClick={onMenu} aria-label="Mở bộ lọc"><Menu size={20} /></button>
-      <a className="brand" href="#top" aria-label="AI Architecture Studio - Trang chủ">
+      <button className="brand brand-button" onClick={() => onNavigate('home')} aria-label="AI Architecture Studio - Trang chủ">
         <BrandMark />
         <span><strong>AI Architecture</strong><small>Studio</small></span>
-      </a>
+      </button>
       <label className="header-search">
         <Search size={18} />
         <input
@@ -110,9 +113,9 @@ function Header({ query, setQuery, favoriteCount, showFavorites, setShowFavorite
         <kbd>⌘ K</kbd>
       </label>
       <nav className="header-actions" aria-label="Điều hướng chính">
-        <a href="#tools">Công cụ AI</a>
-        <a href="#gallery">Thư viện prompt</a>
-        <button className={`favorites-button ${showFavorites ? 'active' : ''}`} onClick={() => setShowFavorites(!showFavorites)}>
+        <button className={`header-task header-task-primary ${activeView === 'tools' ? 'active' : ''}`} onClick={() => onNavigate('tools')}><WandSparkles size={17} /><span><strong>Công cụ AI</strong><small>Tạo ảnh & prompt</small></span></button>
+        <button className={`header-task header-task-library ${activeView === 'library' && !showFavorites ? 'active' : ''}`} onClick={() => onNavigate('library')}><Library size={17} /><span><strong>Thư viện prompt</strong><small>300 mẫu tuyển chọn</small></span></button>
+        <button className={`favorites-button ${showFavorites ? 'active' : ''}`} onClick={() => { setShowFavorites(!showFavorites); onNavigate('library') }}>
           <Heart size={17} fill={showFavorites ? 'currentColor' : 'none'} />
           <span>Đã lưu</span><b>{favoriteCount}</b>
         </button>
@@ -157,7 +160,7 @@ function Sidebar({ categories, selectedCategory, setSelectedCategory, open, onCl
   )
 }
 
-function Hero({ featured, onOpen }: { featured: PromptItem; onOpen: (prompt: PromptItem) => void }) {
+function Hero({ featured, onOpen, onNavigate }: { featured: PromptItem; onOpen: (prompt: PromptItem) => void; onNavigate: (view: AppView) => void }) {
   return (
     <section className="hero" id="top">
       <div className="hero-copy">
@@ -165,8 +168,8 @@ function Hero({ featured, onOpen }: { featured: PromptItem; onOpen: (prompt: Pro
         <h1>Từ ý tưởng thiết kế đến<br /><em>phối cảnh chân thực.</em></h1>
         <p>Một không gian làm việc AI thống nhất để tạo phối cảnh từ mô hình 3D, phân tích ảnh, viết prompt và khám phá thư viện kiến trúc chuyên sâu.</p>
         <div className="hero-actions">
-          <a className="primary-button" href="#tools"><Sparkles size={17} /> Mở bộ công cụ AI</a>
-          <a className="secondary-button" href="#gallery">Khám phá thư viện <ArrowRight size={17} /></a>
+          <button className="primary-button" onClick={() => onNavigate('tools')}><Sparkles size={17} /> Mở bộ công cụ AI</button>
+          <button className="secondary-button" onClick={() => onNavigate('library')}>Khám phá thư viện <ArrowRight size={17} /></button>
         </div>
         <div className="hero-stats">
           <div><strong>{prompts.length}</strong><span>prompt tuyển chọn</span></div><i />
@@ -201,7 +204,7 @@ function ToolWorkspace({ active, setActive, onCopy }: { active: ToolTab; setActi
           <span><Images size={20} /></span><strong>Tạo ảnh phối cảnh</strong><small>Sketch / 3D screenshot → ảnh thực tế</small>
         </button>
         <button role="tab" aria-selected={active === 'prompt'} aria-controls="prompt-tool-panel" className={active === 'prompt' ? 'active' : ''} onClick={() => setActive('prompt')}>
-          <span><MessageSquareText size={20} /></span><strong>Tạo prompt từ ảnh</strong><small>Phân tích bối cảnh, vật liệu và ánh sáng</small>
+          <span><MessageSquareText size={20} /></span><strong>Tạo prompt từ ảnh</strong><small>Trích xuất bối cảnh và ánh sáng</small>
         </button>
       </div>
       <div id="render-tool-panel" role="tabpanel" className={`tool-pane ${active === 'render' ? 'active' : ''}`} aria-hidden={active !== 'render'}><RenderStudio onCopy={onCopy} /></div>
@@ -335,6 +338,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showFavorites, setShowFavorites] = useState(false)
   const [activeTool, setActiveTool] = useState<ToolTab>('render')
+  const [activeView, setActiveView] = useState<AppView>('home')
   const [toast, setToast] = useState('')
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem('phudong-favorites') ?? '[]')) }
@@ -388,6 +392,12 @@ function App() {
   }
 
   const featured = prompts.find((item) => item.featured) ?? prompts[0]
+  const navigate = (view: AppView) => {
+    setActiveView(view)
+    setSidebarOpen(false)
+    if (view !== 'library') setShowFavorites(false)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
   const closeWelcome = () => {
     sessionStorage.setItem('ai-architecture-welcomed', '1')
     setWelcomeOpen(false)
@@ -396,12 +406,20 @@ function App() {
   return (
     <div className="app-shell">
       {welcomeOpen && <WelcomeScreen onClose={closeWelcome} />}
-      <Header query={query} setQuery={setQuery} favoriteCount={favorites.size} showFavorites={showFavorites} setShowFavorites={setShowFavorites} onMenu={() => setSidebarOpen(true)} />
-      <Sidebar categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <main className="main-content">
-        <Hero featured={featured} onOpen={setSelected} />
-        <ToolWorkspace active={activeTool} setActive={setActiveTool} onCopy={copyPrompt} />
-        <section className="gallery-section" id="gallery">
+      <Header query={query} setQuery={(value) => { setQuery(value); if (value) setActiveView('library') }} favoriteCount={favorites.size} showFavorites={showFavorites} setShowFavorites={setShowFavorites} onMenu={() => { setActiveView('library'); setSidebarOpen(true) }} activeView={activeView} onNavigate={navigate} />
+      {activeView === 'library' && <Sidebar categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
+      <main className={`main-content ${activeView !== 'library' ? 'focused-layout' : ''}`}>
+        {activeView === 'home' && <>
+          <Hero featured={featured} onOpen={setSelected} onNavigate={navigate} />
+          <section className="about-banner" id="about">
+            <div><span className="section-kicker">Bắt đầu thật đơn giản</span><h2>Chọn đúng việc cần làm. Studio lo phần còn lại.</h2>
+              <p>Người mới chỉ cần chọn tạo phối cảnh, trích xuất bối cảnh–ánh sáng hoặc khám phá prompt. Các thiết lập nâng cao chỉ xuất hiện khi bạn cần.</p>
+            </div>
+            <button onClick={() => navigate('tools')} className="primary-button">Bắt đầu làm việc <ArrowRight size={17} /></button>
+          </section>
+        </>}
+        <div className={`view-panel ${activeView === 'tools' ? 'active' : ''}`} aria-hidden={activeView !== 'tools'}><ToolWorkspace active={activeTool} setActive={setActiveTool} onCopy={copyPrompt} /></div>
+        <div className={`view-panel ${activeView === 'library' ? 'active' : ''}`} aria-hidden={activeView !== 'library'}><section className="gallery-section view-gallery" id="gallery">
           <div className="gallery-heading">
             <div>
               <span className="section-kicker">Bộ sưu tập tuyển chọn</span>
@@ -427,28 +445,21 @@ function App() {
               <button onClick={() => { setQuery(''); setSelectedCategory('Tất cả'); setShowFavorites(false) }}>Xóa bộ lọc</button>
             </div>
           )}
-        </section>
-
-        <section className="about-banner" id="about">
-          <div><span className="section-kicker">AI Architecture Studio</span><h2>Một prompt tốt là điểm khởi đầu, không phải giới hạn.</h2>
-            <p>Tìm cảm hứng, thay biến nhanh và lưu lại bộ công thức hình ảnh phù hợp với quy trình sáng tạo của bạn.</p>
-          </div>
-          <a href="#gallery" className="primary-button">Bắt đầu khám phá <ArrowRight size={17} /></a>
-        </section>
+        </section></div>
       </main>
 
-      <footer>
+      <footer className={activeView !== 'library' ? 'focused-layout' : ''}>
         <div className="footer-brand"><BrandMark /><span><strong>AI Architecture Studio</strong><small>Made for Vietnamese creators.</small></span></div>
         <p className="footer-links"><a href="https://phudong-appstore.vercel.app/" target="_blank" rel="noreferrer"><Library size={13} /> Thư viện AI</a><a href="https://zalo.me/g/kodwgn037" target="_blank" rel="noreferrer"><Users size={13} /> Nhóm Zalo</a><button onClick={() => setWelcomeOpen(true)}><Sparkles size={13} /> Giới thiệu</button></p>
         <span>© 2026 AI Architecture Studio</span>
       </footer>
 
-      <section className="support-developer" aria-label="Ủng hộ nhà phát triển">
+      {activeView === 'home' && <section className="support-developer focused-layout" aria-label="Ủng hộ nhà phát triển">
         <div className="support-copy"><span><QrCode size={18} /> Ủng hộ nhà phát triển</span><h2>Đồng hành cùng PhuDong AI</h2><p>Sự ủng hộ của bạn giúp chúng tôi tiếp tục phát triển các công cụ AI hữu ích cho cộng đồng kiến trúc Việt Nam.</p>
           <div><small>Techcombank</small><strong>150919769999</strong><span>Đồng Minh Phú</span></div>
         </div>
         <div className="support-qr"><img src="https://img.vietqr.io/image/TCB-150919769999-compact2.png?accountName=DONG%20MINH%20PHU" alt="Mã QR chuyển khoản Techcombank cho Đồng Minh Phú" /><small>Quét mã bằng ứng dụng ngân hàng</small></div>
-      </section>
+      </section>}
 
       {selected && <PromptDialog item={selected} favorite={favorites.has(selected.id)} onFavorite={toggleFavorite} onClose={() => setSelected(null)} onCopy={copyPrompt} />}
       <div className={`toast ${toast ? 'visible' : ''}`} role="status"><Check size={16} /> {toast}</div>
