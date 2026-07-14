@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowRight, Bookmark, Check, ChevronDown, Copy, ExternalLink, Flame, Github,
-  Grid2X2, Heart, Menu, Search, SlidersHorizontal, Sparkles, WandSparkles, X,
+  Grid2X2, Heart, Images, Menu, MessageSquareText, Search, SlidersHorizontal, Sparkles, WandSparkles, X,
 } from 'lucide-react'
 import rawPrompts from './data/prompts.json'
 import ImageAnalyzer from './ImageAnalyzer'
@@ -30,7 +30,7 @@ const applyArguments = (prompt: string, values: Record<string, string>) => promp
 )
 
 function BrandMark() {
-  return <span className="brand-mark" aria-hidden="true"><span>P</span></span>
+  return <span className="brand-mark" aria-hidden="true"><span>A</span></span>
 }
 
 function VisualPlaceholder({ item, large = false }: { item: PromptItem; large?: boolean }) {
@@ -57,9 +57,9 @@ function Header({ query, setQuery, favoriteCount, showFavorites, setShowFavorite
   return (
     <header className="site-header">
       <button className="icon-button mobile-menu" onClick={onMenu} aria-label="Mở bộ lọc"><Menu size={20} /></button>
-      <a className="brand" href="#top" aria-label="PhuDong Prompt Store - Trang chủ">
+      <a className="brand" href="#top" aria-label="AI Architecture Studio - Trang chủ">
         <BrandMark />
-        <span><strong>PhuDong</strong><small>Prompt Store</small></span>
+        <span><strong>AI Architecture</strong><small>Studio</small></span>
       </a>
       <label className="header-search">
         <Search size={18} />
@@ -72,9 +72,8 @@ function Header({ query, setQuery, favoriteCount, showFavorites, setShowFavorite
         <kbd>⌘ K</kbd>
       </label>
       <nav className="header-actions" aria-label="Điều hướng chính">
-        <a href="#render-studio">Render AI</a>
-        <a href="#analyzer">Tạo prompt AI</a>
-        <a href="#gallery">Khám phá</a>
+        <a href="#tools">Công cụ AI</a>
+        <a href="#gallery">Thư viện prompt</a>
         <button className={`favorites-button ${showFavorites ? 'active' : ''}`} onClick={() => setShowFavorites(!showFavorites)}>
           <Heart size={17} fill={showFavorites ? 'currentColor' : 'none'} />
           <span>Đã lưu</span><b>{favoriteCount}</b>
@@ -124,11 +123,11 @@ function Hero({ featured, onOpen }: { featured: PromptItem; onOpen: (prompt: Pro
   return (
     <section className="hero" id="top">
       <div className="hero-copy">
-        <div className="eyebrow"><Sparkles size={15} /> Thư viện cảm hứng AI cho người Việt</div>
-        <h1>Biến ý tưởng thành<br /><em>hình ảnh ấn tượng.</em></h1>
-        <p>Prompt được tuyển chọn, phân loại rõ ràng và sẵn sàng tùy biến cho GPT Image, kiến trúc, đồ họa và nội dung sáng tạo.</p>
+        <div className="eyebrow"><Sparkles size={15} /> AI Architecture Studio cho người Việt</div>
+        <h1>Từ ý tưởng thiết kế đến<br /><em>phối cảnh chân thực.</em></h1>
+        <p>Một không gian làm việc AI thống nhất để tạo phối cảnh từ mô hình 3D, phân tích ảnh, viết prompt và khám phá thư viện kiến trúc chuyên sâu.</p>
         <div className="hero-actions">
-          <a className="primary-button" href="#render-studio"><Sparkles size={17} /> Tạo phối cảnh thực tế</a>
+          <a className="primary-button" href="#tools"><Sparkles size={17} /> Mở bộ công cụ AI</a>
           <a className="secondary-button" href="#gallery">Khám phá thư viện <ArrowRight size={17} /></a>
         </div>
         <div className="hero-stats">
@@ -146,6 +145,29 @@ function Hero({ featured, onOpen }: { featured: PromptItem; onOpen: (prompt: Pro
           <small>{featured.category}</small><strong>{featured.title}</strong><span>Xem chi tiết <ArrowRight size={15} /></span>
         </span>
       </button>
+    </section>
+  )
+}
+
+type ToolTab = 'render' | 'prompt'
+
+function ToolWorkspace({ active, setActive, onCopy }: { active: ToolTab; setActive: (tab: ToolTab) => void; onCopy: (text: string) => void }) {
+  return (
+    <section className="tools-hub" id="tools">
+      <div className="tools-hub-heading">
+        <div><span className="section-kicker"><Sparkles size={14} /> Không gian làm việc</span><h2>Chọn công cụ theo nhiệm vụ</h2><p>Mỗi tab là một quy trình riêng; cấu hình và ảnh đang làm vẫn được giữ nguyên khi chuyển đổi.</p></div>
+        <span className="tools-hub-badge">2 công cụ chuyên biệt</span>
+      </div>
+      <div className="tool-tabs" role="tablist" aria-label="Nhóm công cụ AI">
+        <button role="tab" aria-selected={active === 'render'} aria-controls="render-tool-panel" className={active === 'render' ? 'active' : ''} onClick={() => setActive('render')}>
+          <span><Images size={20} /></span><strong>Tạo ảnh phối cảnh</strong><small>Sketch / 3D screenshot → ảnh thực tế</small>
+        </button>
+        <button role="tab" aria-selected={active === 'prompt'} aria-controls="prompt-tool-panel" className={active === 'prompt' ? 'active' : ''} onClick={() => setActive('prompt')}>
+          <span><MessageSquareText size={20} /></span><strong>Tạo prompt từ ảnh</strong><small>Phân tích bối cảnh, vật liệu và ánh sáng</small>
+        </button>
+      </div>
+      <div id="render-tool-panel" role="tabpanel" className={`tool-pane ${active === 'render' ? 'active' : ''}`} aria-hidden={active !== 'render'}><RenderStudio onCopy={onCopy} /></div>
+      <div id="prompt-tool-panel" role="tabpanel" className={`tool-pane ${active === 'prompt' ? 'active' : ''}`} aria-hidden={active !== 'prompt'}><ImageAnalyzer onCopy={onCopy} /></div>
     </section>
   )
 }
@@ -265,6 +287,7 @@ function App() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showFavorites, setShowFavorites] = useState(false)
+  const [activeTool, setActiveTool] = useState<ToolTab>('render')
   const [toast, setToast] = useState('')
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem('phudong-favorites') ?? '[]')) }
@@ -325,8 +348,7 @@ function App() {
       <Sidebar categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="main-content">
         <Hero featured={featured} onOpen={setSelected} />
-        <RenderStudio onCopy={copyPrompt} />
-        <ImageAnalyzer onCopy={copyPrompt} />
+        <ToolWorkspace active={activeTool} setActive={setActiveTool} onCopy={copyPrompt} />
         <section className="gallery-section" id="gallery">
           <div className="gallery-heading">
             <div>
@@ -356,7 +378,7 @@ function App() {
         </section>
 
         <section className="about-banner" id="about">
-          <div><span className="section-kicker">PhuDong Creative Lab</span><h2>Một prompt tốt là điểm khởi đầu, không phải giới hạn.</h2>
+          <div><span className="section-kicker">AI Architecture Studio</span><h2>Một prompt tốt là điểm khởi đầu, không phải giới hạn.</h2>
             <p>Tìm cảm hứng, thay biến nhanh và lưu lại bộ công thức hình ảnh phù hợp với quy trình sáng tạo của bạn.</p>
           </div>
           <a href="#gallery" className="primary-button">Bắt đầu khám phá <ArrowRight size={17} /></a>
@@ -364,9 +386,9 @@ function App() {
       </main>
 
       <footer>
-        <div className="footer-brand"><BrandMark /><span><strong>PhuDong Prompt Store</strong><small>Made for Vietnamese creators.</small></span></div>
+        <div className="footer-brand"><BrandMark /><span><strong>AI Architecture Studio</strong><small>Made for Vietnamese creators.</small></span></div>
         <p>Nội dung được chuyển thể từ{' '}<a href="https://github.com/YouMind-OpenLab/awesome-gpt-image-2" target="_blank" rel="noreferrer">YouMind OpenLab <Github size={13} /></a>{' '}theo giấy phép <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>.</p>
-        <span>© 2026 PhuDong AI Studio</span>
+        <span>© 2026 AI Architecture Studio</span>
       </footer>
 
       {selected && <PromptDialog item={selected} favorite={favorites.has(selected.id)} onFavorite={toggleFavorite} onClose={() => setSelected(null)} onCopy={copyPrompt} />}

@@ -2,7 +2,7 @@
   "name": "phudong-prompt-store",
   "private": true,
   "version": "1.0.0",
-  "description": "PhuDong Prompt Store - thu vien prompt AI truc quan cho cong dong sang tao Viet Nam",
+  "description": "AI Architecture Studio - cong cu tao phoi canh va thu vien prompt AI cho kien truc",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -1,6 +1,6 @@
-# PhuDong Prompt Store
+# AI Architecture Studio
 
-Thư viện prompt AI trực quan dành cho cộng đồng sáng tạo Việt Nam, kèm AI Prompt Studio để phân tích bối cảnh và ánh sáng từ ảnh tham chiếu.
+Không gian làm việc AI dành cho kiến trúc sư và nhà thiết kế Việt Nam: tạo phối cảnh từ mô hình, phân tích ảnh, tạo prompt và khám phá thư viện chuyên ngành.
 
 ## Tính năng
 
@@ -14,6 +14,7 @@ Thư viện prompt AI trực quan dành cho cộng đồng sáng tạo Việt Na
 - BYOK: người dùng nhập khóa API OpenAI, Google Gemini hoặc Anthropic Claude của riêng họ.
 - Tự động xoay tua và chuyển sang nhà cung cấp tiếp theo khi một mô hình không phản hồi.
 - Render Studio chuyển sketch, clay render và screenshot SketchUp/Revit/3ds Max/Rhino thành phối cảnh thực tế bằng OpenAI GPT Image hoặc Google Gemini.
+- Hai nhóm công cụ được tách thành tab “Tạo ảnh phối cảnh” và “Tạo prompt từ ảnh”, đồng thời giữ trạng thái khi chuyển tab.
 - Bộ cấu hình render gồm 4 chuyên ngành, 120 phong cách, 40 loại công trình, 40 bối cảnh, 20 kịch bản ánh sáng và 20 góc camera; mọi nhóm đều có lựa chọn tiêu chuẩn.
 
 ## Quyền riêng tư của API key
@@ -44,7 +45,7 @@ API phân tích ảnh nằm tại `api/analyze-image.ts`; API tạo phối cản
 
 ## Nguồn cảm hứng
 
-Giao diện và hướng sản phẩm được phát triển từ ý tưởng thư viện [Awesome GPT Image 2 Prompts](https://github.com/YouMind-OpenLab/awesome-gpt-image-2). Nội dung prompt trong ứng dụng là bộ nội dung riêng của PhuDong Prompt Store.
+Giao diện và hướng sản phẩm được phát triển từ ý tưởng thư viện [Awesome GPT Image 2 Prompts](https://github.com/YouMind-OpenLab/awesome-gpt-image-2). Nội dung prompt trong ứng dụng là bộ nội dung riêng của AI Architecture Studio.
 
 ## Giấy phép
 
