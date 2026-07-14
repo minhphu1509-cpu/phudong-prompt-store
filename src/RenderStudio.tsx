@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { AlertCircle, CheckCircle2, ChevronDown, Copy, Download, ImagePlus, KeyRound, LoaderCircle, LockKeyhole, RotateCcw, Sparkles, Trash2, WandSparkles } from 'lucide-react'
+import { AlertCircle, CheckCircle2, ChevronDown, Copy, Download, ExternalLink, ImagePlus, KeyRound, LoaderCircle, LockKeyhole, RotateCcw, Sparkles, Trash2, WandSparkles } from 'lucide-react'
 import {
   ASPECTS, CAMERAS, CONTEXTS, DISCIPLINES, LIGHTING, PEOPLE, PRESERVATION, PROJECT_TYPES, QUALITY,
   SOURCE_TYPES, STYLES, TIMES, VEGETATION, WEATHER, buildRenderPrompt,
@@ -18,6 +18,10 @@ const defaults: ProviderConfig = {
   gemini:{apiKey:'',model:'gemini-3.1-flash-image',enabled:true},
 }
 const defaultSelection: RenderSelection = { discipline:'architecture',style:'standard',projectType:'standard',sourceType:'standard',time:'standard',weather:'standard',lighting:'standard',context:'standard',camera:'standard',preservation:'standard',people:'standard',vegetation:'standard',aspect:'1536x1024',quality:'medium',notes:'' }
+const IMAGE_MODELS:Record<ProviderId,Array<{value:string;label:string}>>={
+  openai:[{value:'gpt-image-2',label:'GPT Image 2 — chất lượng cao (trả phí)'},{value:'gpt-image-1-mini',label:'GPT Image 1 Mini — tiết kiệm (trả phí)'}],
+  gemini:[{value:'gemini-3.1-flash-image',label:'Gemini 3.1 Flash Image — nhanh (trả phí)'},{value:'gemini-2.5-flash-image',label:'Gemini 2.5 Flash Image — tiết kiệm (trả phí)'}],
+}
 
 function readProviders():ProviderConfig {
   try {
@@ -50,6 +54,7 @@ export default function RenderStudio({onCopy}:{onCopy:(text:string)=>void}){
   const [selection,setSelection]=useState<RenderSelection>(defaultSelection)
   const [providers,setProviders]=useState<ProviderConfig>(readProviders)
   const [strategy,setStrategy]=useState<'auto'|ProviderId>('auto')
+  const [usageMode,setUsageMode]=useState<'platform'|'api'>('platform')
   const [apiOpen,setApiOpen]=useState(false)
   const [preview,setPreview]=useState('')
   const [imageData,setImageData]=useState('')
@@ -67,6 +72,7 @@ export default function RenderStudio({onCopy}:{onCopy:(text:string)=>void}){
   const updateProvider=(id:ProviderId,patch:Partial<ProviderConfig[ProviderId]>)=>{setProviders(current=>{const next={...current,[id]:{...current[id],...patch}};sessionStorage.setItem(PROVIDER_KEY,JSON.stringify(next));return next})}
   const handleFile=async(file?:File)=>{if(!file)return;setError('');setResult(null);if(!['image/jpeg','image/png','image/webp'].includes(file.type))return setError('Chỉ hỗ trợ JPG, PNG hoặc WebP.');if(file.size>MAX_FILE)return setError('Ảnh vượt quá giới hạn 10 MB.');setProcessing(true);try{const data=await optimize(file);setPreview(data);setImageData(data);setFileName(file.name)}catch(caught){setError(caught instanceof Error?caught.message:'Không thể xử lý ảnh.')}finally{setProcessing(false)}}
   const clear=()=>{setPreview('');setImageData('');setFileName('');setResult(null);if(inputRef.current)inputRef.current.value=''}
+  const openPlatform=(url:string)=>{onCopy(prompt);window.open(url,'_blank','noopener,noreferrer')}
 
   const generate=async()=>{
     setError('');setResult(null)
@@ -103,14 +109,16 @@ export default function RenderStudio({onCopy}:{onCopy:(text:string)=>void}){
           <label className="render-field render-notes"><span>Ghi chú bổ sung</span><textarea value={selection.notes} onChange={e=>set('notes',e.target.value)} maxLength={500} placeholder="Ví dụ: giữ nguyên mẫu gạch mặt tiền, bổ sung cây bằng lăng…"/></label>
         </div>
         <div className="render-actions-row"><button onClick={()=>setSelection(defaultSelection)}><RotateCcw size={14}/> Đặt lại tiêu chuẩn</button><button onClick={()=>onCopy(prompt)}><Copy size={14}/> Sao chép prompt</button></div>
-        <button className="render-api-toggle" onClick={()=>setApiOpen(!apiOpen)}><KeyRound size={16}/> Cấu hình mô hình tạo ảnh <b>{configured.length}</b><ChevronDown size={15}/></button>
+        <div className="render-usage-mode" role="tablist" aria-label="Cách sử dụng mô hình tạo ảnh"><button className={usageMode==='platform'?'active':''} onClick={()=>setUsageMode('platform')}><Sparkles size={15}/><span><strong>Dùng quota trên nền tảng</strong><small>Không gọi API từ website</small></span></button><button className={usageMode==='api'?'active':''} onClick={()=>setUsageMode('api')}><KeyRound size={15}/><span><strong>API trực tiếp</strong><small>Có thể phát sinh chi phí</small></span></button></div>
+        {usageMode==='platform'&&<div className="free-platform-box"><div><strong>Tạo ảnh bằng quota của tài khoản</strong><p>Website sẽ sao chép prompt và mở nền tảng. Hãy tải lại ảnh nguồn trong cửa sổ mới. Số lượt miễn phí do ChatGPT hoặc Gemini quyết định và có thể thay đổi.</p></div><div className="free-platform-actions"><button onClick={()=>openPlatform('https://chatgpt.com/')}><span className="platform-logo">OA</span><span><strong>Mở ChatGPT</strong><small>Sao chép prompt trước khi mở</small></span><ExternalLink size={14}/></button><button onClick={()=>openPlatform('https://aistudio.google.com/')}><span className="platform-logo google">G</span><span><strong>Mở Gemini AI Studio</strong><small>Sao chép prompt trước khi mở</small></span><ExternalLink size={14}/></button></div><small className="free-disclaimer">Không thể dùng quota web thông qua API key. “Miễn phí” phụ thuộc gói và giới hạn của tài khoản trên từng nền tảng.</small></div>}
+        {usageMode==='api'&&<><button className="render-api-toggle" onClick={()=>setApiOpen(!apiOpen)}><KeyRound size={16}/> Cấu hình API tạo ảnh <b>{configured.length}</b><ChevronDown size={15}/></button>
         {apiOpen&&<div className="render-provider-box">
           <div className="render-provider-head"><LockKeyhole size={15}/><span>API key chỉ lưu trong phiên tab hiện tại</span><select value={strategy} onChange={e=>setStrategy(e.target.value as 'auto'|ProviderId)}><option value="auto">Tự động dự phòng</option><option value="openai">OpenAI</option><option value="gemini">Gemini</option></select></div>
-          {(['openai','gemini'] as ProviderId[]).map(id=><div className="render-provider" key={id}><label><input type="checkbox" checked={providers[id].enabled} onChange={e=>updateProvider(id,{enabled:e.target.checked})}/><strong>{id==='openai'?'OpenAI':'Google Gemini'}</strong></label><input type="password" autoComplete="off" placeholder="API key" value={providers[id].apiKey} onChange={e=>updateProvider(id,{apiKey:e.target.value})}/><input value={providers[id].model} onChange={e=>updateProvider(id,{model:e.target.value})}/></div>)}
+          {(['openai','gemini'] as ProviderId[]).map(id=><div className="render-provider" key={id}><label><input type="checkbox" checked={providers[id].enabled} onChange={e=>updateProvider(id,{enabled:e.target.checked})}/><strong>{id==='openai'?'OpenAI':'Google Gemini'}</strong></label><input type="password" autoComplete="off" placeholder="API key" value={providers[id].apiKey} onChange={e=>updateProvider(id,{apiKey:e.target.value})}/><select value={providers[id].model} onChange={e=>updateProvider(id,{model:e.target.value})}>{IMAGE_MODELS[id].map(model=><option key={model.value} value={model.value}>{model.label}</option>)}</select></div>)}
         </div>}
+        </>}
         {error&&<div className="analyzer-error"><AlertCircle size={16}/>{error}</div>}
-        <button className="render-generate" onClick={()=>void generate()} disabled={loading||processing}>{loading?<><LoaderCircle className="spinning" size={18}/> AI đang dựng phối cảnh…</>:<><Sparkles size={18}/> Tạo phối cảnh thực tế</>}</button>
-        <p className="render-cost-note">Tạo ảnh sử dụng hạn mức API của bạn. Chất lượng cao và ảnh lớn có thể tốn nhiều chi phí hơn.</p>
+        {usageMode==='api'&&<><button className="render-generate" onClick={()=>void generate()} disabled={loading||processing}>{loading?<><LoaderCircle className="spinning" size={18}/> AI đang dựng phối cảnh…</>:<><Sparkles size={18}/> Tạo phối cảnh qua API</>}</button><p className="render-cost-note">Các API tạo ảnh hiện tại có thể tính phí. Website không thể ép API sử dụng quota miễn phí của ChatGPT hoặc Gemini web.</p></>}
       </div>
       <div className="render-output-panel">
         {result?<><div className="render-result-head"><span><CheckCircle2 size={15}/><strong>Đã tạo bằng {result.providerUsed==='openai'?'OpenAI':'Gemini'}</strong><small>{result.modelUsed}</small></span><a href={result.imageData} download="phudong-architectural-render.webp"><Download size={15}/> Lưu ảnh</a></div><img src={result.imageData} alt="Phối cảnh kiến trúc do AI tạo"/>{result.attempts.length>1&&<p>Đã tự chuyển mô hình dự phòng sau khi lần gọi đầu không thành công.</p>}</>:<div className="render-empty"><span><WandSparkles size={30}/></span><h3>Phối cảnh sẽ xuất hiện tại đây</h3><p>Giá trị “Tiêu chuẩn” giúp AI tự suy luận lựa chọn phù hợp từ ảnh nguồn; bạn chỉ cần thay những thông số muốn kiểm soát.</p><ul><li>Khóa hình khối và camera</li><li>Vật liệu PBR chân thực</li><li>Ánh sáng kiến trúc chuyên nghiệp</li></ul></div>}
