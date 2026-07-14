@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ArrowRight, Bookmark, Check, ChevronDown, Copy, ExternalLink, Flame, Github,
-  Grid2X2, Heart, Images, Menu, MessageSquareText, Search, SlidersHorizontal, Sparkles, WandSparkles, X,
+  ArrowRight, Bookmark, Building2, Camera, Check, ChevronDown, Copy, ExternalLink, Flame, Github,
+  Grid2X2, Heart, Images, Library, Menu, MessageSquareText, QrCode, Search, SlidersHorizontal, Sparkles, Users, WandSparkles, X,
 } from 'lucide-react'
 import rawPrompts from './data/prompts.json'
 import { additionalPrompts } from './data/additional-prompts'
+import { buildQuickConfig, getQuickFilters } from './data/quick-filters'
 import ImageAnalyzer from './ImageAnalyzer'
 import RenderStudio from './RenderStudio'
 import type { PromptItem } from './types'
@@ -32,6 +33,42 @@ const applyArguments = (prompt: string, values: Record<string, string>) => promp
 
 function BrandMark() {
   return <span className="brand-mark" aria-hidden="true"><span>A</span></span>
+}
+
+function WelcomeScreen({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="welcome-screen" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+      <div className="welcome-backdrop" />
+      <button className="welcome-close" onClick={onClose} aria-label="Đóng màn hình chào mừng"><X size={19} /></button>
+      <div className="welcome-layout">
+        <section className="welcome-copy">
+          <div className="welcome-brand"><BrandMark /><span><strong>AI Architecture</strong><small>Studio · by PhuDong AI</small></span></div>
+          <span className="welcome-kicker"><Sparkles size={13} /> Creative intelligence for architecture</span>
+          <h1 id="welcome-title">Biến ý tưởng thành<br /><em>không gian sống động.</em></h1>
+          <p>Nền tảng AI dành cho kiến trúc sư và nhà thiết kế Việt Nam — tạo phối cảnh chân thực, phân tích hình ảnh và khai thác 300 prompt chuyên sâu trong một không gian làm việc.</p>
+          <div className="welcome-features">
+            <article><Images size={19} /><span><strong>Tạo ảnh phối cảnh</strong><small>Từ phác thảo và mô hình 3D</small></span></article>
+            <article><MessageSquareText size={19} /><span><strong>Prompt từ hình ảnh</strong><small>Phân tích bối cảnh và ánh sáng</small></span></article>
+            <article><Library size={19} /><span><strong>300 prompt tuyển chọn</strong><small>Kiến trúc, nội thất và sáng tạo</small></span></article>
+          </div>
+          <div className="welcome-actions">
+            <button className="welcome-primary" onClick={onClose}>Khám phá Studio <ArrowRight size={17} /></button>
+            <a href="https://phudong-appstore.vercel.app/" target="_blank" rel="noreferrer">Thư viện ứng dụng AI <ExternalLink size={15} /></a>
+            <a href="https://zalo.me/g/kodwgn037" target="_blank" rel="noreferrer"><Users size={15} /> Tham gia nhóm Zalo</a>
+          </div>
+          <small className="welcome-credit">Developed with precision by <strong>PhuDong AI</strong></small>
+        </section>
+        <section className="welcome-showcase" aria-label="Hình ảnh demo">
+          <div className="welcome-main-image"><img src="/images/welcome-architecture.png" alt="Phối cảnh biệt thự hiện đại nhiệt đới vào blue hour" /><span>AI Architectural Visualization <b>01</b></span></div>
+          <div className="welcome-mini-images">
+            <figure><img src="/images/welcome-architecture.png" alt="" /><figcaption><Camera size={13} /> Photorealistic</figcaption></figure>
+            <figure><img src="/images/welcome-architecture.png" alt="" /><figcaption><Building2 size={13} /> Strict geometry</figcaption></figure>
+          </div>
+          <div className="welcome-image-note"><i /><span><strong>AI IMAGE LAB</strong> Không gian · Vật liệu · Ánh sáng</span></div>
+        </section>
+      </div>
+    </div>
+  )
 }
 
 function VisualPlaceholder({ item, large = false }: { item: PromptItem; large?: boolean }) {
@@ -220,8 +257,11 @@ type PromptDialogProps = {
 function PromptDialog({ item, favorite, onFavorite, onClose, onCopy }: PromptDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const variables = useMemo(() => extractArguments(item.prompt), [item.prompt])
+  const quickFilters = useMemo(() => getQuickFilters(item.category, item.title), [item.category, item.title])
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(variables.map((v) => [v.name, v.defaultValue])))
-  const finalPrompt = useMemo(() => applyArguments(item.prompt, values), [item.prompt, values])
+  const [quickValues, setQuickValues] = useState<Record<string, string>>(() => Object.fromEntries(quickFilters.map((field) => [field.key, 'standard'])))
+  const finalPrompt = useMemo(() => applyArguments(item.prompt, values) + buildQuickConfig(quickFilters, quickValues), [item.prompt, values, quickFilters, quickValues])
+  const resetQuickFilters = () => setQuickValues(Object.fromEntries(quickFilters.map((field) => [field.key, 'standard'])))
 
   useEffect(() => {
     if (dialogRef.current && !dialogRef.current.open) dialogRef.current.showModal()
@@ -249,18 +289,23 @@ function PromptDialog({ item, favorite, onFavorite, onClose, onCopy }: PromptDia
           <p className="dialog-description">{item.description}</p>
           <div className="dialog-byline"><span>Đóng góp bởi <strong>{item.author?.name ?? 'Cộng đồng'}</strong></span><span>{item.published}</span></div>
 
-          {variables.length > 0 && (
-            <section className="variables-panel">
-              <div className="section-title"><span><SlidersHorizontal size={16} /> Tùy biến nhanh</span><small>{variables.length} biến</small></div>
+          <section className="variables-panel">
+              <div className="section-title"><span><SlidersHorizontal size={16} /> Tùy biến nhanh</span><span className="filter-title-actions"><small>{variables.length + quickFilters.length} tùy chọn</small><button onClick={resetQuickFilters}>Đặt lại</button></span></div>
               <div className="variable-grid">
-                {variables.slice(0, 8).map((variable) => (
+                {variables.map((variable) => (
                   <label key={variable.name}><span>{variable.name}</span>
                     <input value={values[variable.name] ?? ''} onChange={(event) => setValues({ ...values, [variable.name]: event.target.value })} />
                   </label>
                 ))}
+                {quickFilters.map((field) => (
+                  <label key={field.key}><span>{field.label}</span>
+                    <div className="quick-select"><select value={quickValues[field.key] ?? 'standard'} onChange={(event) => setQuickValues({ ...quickValues, [field.key]: event.target.value })}>
+                      {field.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select><ChevronDown size={14} /></div>
+                  </label>
+                ))}
               </div>
             </section>
-          )}
 
           <section className="prompt-panel">
             <div className="section-title"><span><WandSparkles size={16} /> Prompt hoàn chỉnh</span><small>{finalPrompt.length.toLocaleString('vi-VN')} ký tự</small></div>
@@ -281,6 +326,7 @@ function PromptDialog({ item, favorite, onFavorite, onClose, onCopy }: PromptDia
 }
 
 function App() {
+  const [welcomeOpen, setWelcomeOpen] = useState(() => sessionStorage.getItem('ai-architecture-welcomed') !== '1')
   const [query, setQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('Tất cả')
   const [sort, setSort] = useState('featured')
@@ -342,9 +388,14 @@ function App() {
   }
 
   const featured = prompts.find((item) => item.featured) ?? prompts[0]
+  const closeWelcome = () => {
+    sessionStorage.setItem('ai-architecture-welcomed', '1')
+    setWelcomeOpen(false)
+  }
 
   return (
     <div className="app-shell">
+      {welcomeOpen && <WelcomeScreen onClose={closeWelcome} />}
       <Header query={query} setQuery={setQuery} favoriteCount={favorites.size} showFavorites={showFavorites} setShowFavorites={setShowFavorites} onMenu={() => setSidebarOpen(true)} />
       <Sidebar categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="main-content">
@@ -388,9 +439,16 @@ function App() {
 
       <footer>
         <div className="footer-brand"><BrandMark /><span><strong>AI Architecture Studio</strong><small>Made for Vietnamese creators.</small></span></div>
-        <p>Nội dung được chuyển thể từ{' '}<a href="https://github.com/YouMind-OpenLab/awesome-gpt-image-2" target="_blank" rel="noreferrer">YouMind OpenLab <Github size={13} /></a>{' '}theo giấy phép <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>.</p>
+        <p className="footer-links"><a href="https://phudong-appstore.vercel.app/" target="_blank" rel="noreferrer"><Library size={13} /> Thư viện AI</a><a href="https://zalo.me/g/kodwgn037" target="_blank" rel="noreferrer"><Users size={13} /> Nhóm Zalo</a><button onClick={() => setWelcomeOpen(true)}><Sparkles size={13} /> Giới thiệu</button></p>
         <span>© 2026 AI Architecture Studio</span>
       </footer>
+
+      <section className="support-developer" aria-label="Ủng hộ nhà phát triển">
+        <div className="support-copy"><span><QrCode size={18} /> Ủng hộ nhà phát triển</span><h2>Đồng hành cùng PhuDong AI</h2><p>Sự ủng hộ của bạn giúp chúng tôi tiếp tục phát triển các công cụ AI hữu ích cho cộng đồng kiến trúc Việt Nam.</p>
+          <div><small>Techcombank</small><strong>150919769999</strong><span>Đồng Minh Phú</span></div>
+        </div>
+        <div className="support-qr"><img src="https://img.vietqr.io/image/TCB-150919769999-compact2.png?accountName=DONG%20MINH%20PHU" alt="Mã QR chuyển khoản Techcombank cho Đồng Minh Phú" /><small>Quét mã bằng ứng dụng ngân hàng</small></div>
+      </section>
 
       {selected && <PromptDialog item={selected} favorite={favorites.has(selected.id)} onFavorite={toggleFavorite} onClose={() => setSelected(null)} onCopy={copyPrompt} />}
       <div className={`toast ${toast ? 'visible' : ''}`} role="status"><Check size={16} /> {toast}</div>
