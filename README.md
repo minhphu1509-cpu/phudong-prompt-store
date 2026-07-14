@@ -1,32 +1,39 @@
 # PhuDong Prompt Store
 
-Website thư viện prompt AI nguyên bản dành cho kiến trúc, nội thất, đồ họa thông tin,
-marketing và chỉnh sửa ảnh, được xây dựng bằng React, TypeScript và Vite.
+Thư viện prompt AI trực quan dành cho cộng đồng sáng tạo Việt Nam, kèm AI Prompt Studio để phân tích bối cảnh và ánh sáng từ ảnh tham chiếu.
 
-## Chạy trên máy
+## Tính năng
+
+- Duyệt, tìm kiếm, lọc và lưu prompt yêu thích.
+- Tùy biến biến số trong prompt và sao chép nhanh.
+- Tải ảnh JPG, PNG hoặc WebP để phân tích không gian, vật liệu, góc máy và ánh sáng.
+- Tạo prompt tiếng Việt, tiếng Anh, negative prompt và thiết lập hình ảnh gợi ý.
+- BYOK: người dùng nhập khóa API OpenAI, Google Gemini hoặc Anthropic Claude của riêng họ.
+- Tự động xoay tua và chuyển sang nhà cung cấp tiếp theo khi một mô hình không phản hồi.
+
+## Quyền riêng tư của API key
+
+API key chỉ được lưu trong `sessionStorage` của tab hiện tại. Khóa được gửi tạm thời tới Vercel Function để gọi nhà cung cấp đã chọn, không được ghi vào GitHub, biến môi trường, cơ sở dữ liệu hay `localStorage`. Đóng tab sẽ xóa cấu hình phiên.
+
+## Chạy cục bộ
 
 ```bash
 npm install
 npm run dev
 ```
 
-Mở `http://localhost:4173`.
-
-## Kiểm tra bản production
+Lệnh kiểm tra bản production:
 
 ```bash
 npm run build
-npm run preview
 ```
 
-## Tính năng
+API phân tích ảnh nằm tại `api/analyze-image.ts` và được Vercel triển khai tự động cùng ứng dụng Vite.
 
-- Tìm kiếm toàn văn, hỗ trợ tiếng Việt không dấu.
-- Lọc theo danh mục và sắp xếp prompt.
-- Lưu yêu thích bằng `localStorage`.
-- Sao chép prompt một chạm.
-- Nhận diện và thay thế biến `{argument ...}` trực tiếp.
-- Modal chi tiết, nguồn và tác giả.
-- Responsive cho desktop, tablet và điện thoại.
+## Nguồn cảm hứng
 
-Xem [NOTICE.md](./NOTICE.md) để biết thông tin nguồn cảm hứng và giấy phép.
+Giao diện và hướng sản phẩm được phát triển từ ý tưởng thư viện [Awesome GPT Image 2 Prompts](https://github.com/YouMind-OpenLab/awesome-gpt-image-2). Nội dung prompt trong ứng dụng là bộ nội dung riêng của PhuDong Prompt Store.
+
+## Giấy phép
+
+MIT — xem `LICENSE`.

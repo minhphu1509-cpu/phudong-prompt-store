@@ -4,6 +4,7 @@ import {
   Grid2X2, Heart, Menu, Search, SlidersHorizontal, Sparkles, WandSparkles, X,
 } from 'lucide-react'
 import rawPrompts from './data/prompts.json'
+import ImageAnalyzer from './ImageAnalyzer'
 import type { PromptItem } from './types'
 
 const prompts = rawPrompts as PromptItem[]
@@ -70,8 +71,8 @@ function Header({ query, setQuery, favoriteCount, showFavorites, setShowFavorite
         <kbd>⌘ K</kbd>
       </label>
       <nav className="header-actions" aria-label="Điều hướng chính">
+        <a href="#analyzer">Tạo prompt AI</a>
         <a href="#gallery">Khám phá</a>
-        <a href="#about">Giới thiệu</a>
         <button className={`favorites-button ${showFavorites ? 'active' : ''}`} onClick={() => setShowFavorites(!showFavorites)}>
           <Heart size={17} fill={showFavorites ? 'currentColor' : 'none'} />
           <span>Đã lưu</span><b>{favoriteCount}</b>
@@ -125,8 +126,8 @@ function Hero({ featured, onOpen }: { featured: PromptItem; onOpen: (prompt: Pro
         <h1>Biến ý tưởng thành<br /><em>hình ảnh ấn tượng.</em></h1>
         <p>Prompt được tuyển chọn, phân loại rõ ràng và sẵn sàng tùy biến cho GPT Image, kiến trúc, đồ họa và nội dung sáng tạo.</p>
         <div className="hero-actions">
-          <a className="primary-button" href="#gallery">Khám phá prompt <ArrowRight size={17} /></a>
-          <button className="secondary-button" onClick={() => onOpen(featured)}><WandSparkles size={17} /> Xem prompt nổi bật</button>
+          <a className="primary-button" href="#analyzer"><Sparkles size={17} /> Tạo prompt từ ảnh</a>
+          <a className="secondary-button" href="#gallery">Khám phá thư viện <ArrowRight size={17} /></a>
         </div>
         <div className="hero-stats">
           <div><strong>{prompts.length}</strong><span>prompt tuyển chọn</span></div><i />
@@ -322,6 +323,7 @@ function App() {
       <Sidebar categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="main-content">
         <Hero featured={featured} onOpen={setSelected} />
+        <ImageAnalyzer onCopy={copyPrompt} />
         <section className="gallery-section" id="gallery">
           <div className="gallery-heading">
             <div>
