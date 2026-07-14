@@ -21,11 +21,26 @@ type VercelResponseLike = {
 }
 
 type ProviderResult = { text: string; model: string }
+type Attempt = { provider: ProviderId; status: 'failed' | 'success'; error?: string }
 
 const MAX_IMAGE_LENGTH = 3_100_000
 const PROVIDERS = new Set<ProviderId>(['openai', 'gemini', 'anthropic'])
 const MODES = new Set<AnalysisMode>(['full', 'context', 'lighting'])
 const MODEL_PATTERN = /^[a-zA-Z0-9._:/-]{1,120}$/
+
+const providerError = (provider: ProviderId, error: unknown) => {
+  const code = error instanceof Error ? error.message : 'unknown'
+  if (code === 'provider_400') return 'Yêu cầu hoặc cấu hình model không được hỗ trợ'
+  if (code === 'provider_401') return 'API key không hợp lệ hoặc đã hết hiệu lực'
+  if (code === 'provider_403') return 'API key chưa có quyền dùng model hoặc khu vực bị hạn chế'
+  if (code === 'provider_404') return 'Không tìm thấy model; hãy kiểm tra đúng tên model'
+  if (code === 'provider_429') return 'Đã hết hạn mức, credit hoặc đang bị giới hạn tốc độ'
+  if (/provider_5\d\d/.test(code)) return 'Máy chủ nhà cung cấp đang tạm thời gián đoạn'
+  if (code === 'invalid_output') return 'Model phản hồi sai định dạng JSON'
+  if (code === 'invalid_image') return 'Model không đọc được định dạng ảnh'
+  if (code === 'timeout' || code.includes('abort')) return 'Kết nối tới model quá thời gian'
+  return `Không thể kết nối tới ${provider}`
+}
 
 const field = (value: unknown, fallback = 'Không xác định') => typeof value === 'string' && value.trim() ? value.trim() : fallback
 
@@ -227,7 +242,7 @@ export default async function handler(request: VercelRequestLike, response: Verc
   ))
   if (!validQueue.length) return response.status(400).json({ error: 'Chưa có cấu hình API key hợp lệ.' })
 
-  const attempts: Array<{ provider: ProviderId; status: 'failed' | 'success' }> = []
+  const attempts: Attempt[] = []
   const instruction = buildInstruction(mode)
   for (const item of validQueue) {
     try {
@@ -235,13 +250,13 @@ export default async function handler(request: VercelRequestLike, response: Verc
       const result = normalizeResult(extractJson(providerResult.text))
       attempts.push({ provider: item.provider, status: 'success' })
       return response.status(200).json({ result, providerUsed: item.provider, modelUsed: providerResult.model, attempts })
-    } catch {
-      attempts.push({ provider: item.provider, status: 'failed' })
+    } catch (error) {
+      attempts.push({ provider: item.provider, status: 'failed', error: providerError(item.provider, error) })
     }
   }
 
   return response.status(502).json({
-    error: 'Tất cả mô hình đã thử đều chưa phản hồi. Hãy kiểm tra API key, tên model hoặc hạn mức tài khoản.',
+    error: `Không thể phân tích ảnh. ${attempts.map((attempt) => `${attempt.provider}: ${attempt.error}`).join(' · ')}`,
     attempts,
   })
 }

@@ -20,6 +20,12 @@ const PROVIDERS: Array<{ id: ProviderId; name: string; accent: string; defaultMo
   { id: 'anthropic', name: 'Anthropic Claude', accent: 'C', defaultModel: 'claude-sonnet-5', keyHint: 'sk-ant-…' },
 ]
 
+const MODEL_SUGGESTIONS: Record<ProviderId, string[]> = {
+  openai: ['gpt-5.6', 'gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-4o-mini'],
+  gemini: ['gemini-3.5-flash', 'gemini-2.5-flash'],
+  anthropic: ['claude-sonnet-5', 'claude-opus-4-8', 'claude-haiku-4-5'],
+}
+
 const EMPTY_PROVIDERS: ProviderState = {
   openai: { apiKey: '', model: 'gpt-5.6', enabled: true },
   gemini: { apiKey: '', model: 'gemini-3.5-flash', enabled: true },
@@ -235,7 +241,7 @@ export default function ImageAnalyzer({ onCopy }: { onCopy: (text: string) => vo
             <div className="provider-list">{PROVIDERS.map((provider) => <article key={provider.id} className={providers[provider.id].apiKey ? 'configured' : ''}>
               <label className="provider-switch"><input type="checkbox" checked={providers[provider.id].enabled} onChange={(event) => updateProvider(provider.id, { enabled: event.target.checked })} /><span /><b>{provider.accent}</b><strong>{provider.name}</strong>{providers[provider.id].apiKey && <CheckCircle2 size={15} />}</label>
               <label><span>API key</span><input type="password" autoComplete="off" spellCheck={false} placeholder={provider.keyHint} value={providers[provider.id].apiKey} onChange={(event) => updateProvider(provider.id, { apiKey: event.target.value })} /></label>
-              <label><span>Model</span><input type="text" spellCheck={false} value={providers[provider.id].model} onChange={(event) => updateProvider(provider.id, { model: event.target.value })} /></label>
+              <label><span>Model</span><input type="text" list={`models-${provider.id}`} spellCheck={false} value={providers[provider.id].model} onChange={(event) => updateProvider(provider.id, { model: event.target.value })} /><datalist id={`models-${provider.id}`}>{MODEL_SUGGESTIONS[provider.id].map((model) => <option key={model} value={model} />)}</datalist></label>
             </article>)}</div>
             <p className="provider-note"><LockKeyhole size={14} /> Không lưu key vào GitHub, Vercel hay localStorage. Đóng tab sẽ xóa cấu hình phiên.</p>
           </div>}
@@ -266,7 +272,7 @@ export default function ImageAnalyzer({ onCopy }: { onCopy: (text: string) => vo
         <div className={`analyzer-output ${response ? 'has-result' : ''}`}>
           {!response ? <div className="output-placeholder"><span><Sparkles size={27} /></span><h3>Dùng ảnh như mẫu môi trường</h3><p>Công trình hoặc chủ thể trong ảnh sẽ được bỏ qua. Kết quả chỉ chuyển bối cảnh và ánh sáng sang prompt render.</p><div><i /> Đọc môi trường<i /> Trích xuất ánh sáng<i /> Bảo vệ thiết kế nguồn</div></div> : <>
             <div className="output-heading"><div><span>Kết quả phân tích</span><h3>{response.result.summary}</h3></div><div className="model-used"><CheckCircle2 size={15} /><span><strong>{PROVIDERS.find((item) => item.id === response.providerUsed)?.name}</strong>{response.modelUsed}</span></div></div>
-            {response.attempts.length > 1 && <div className="fallback-trace"><RefreshCw size={14} /> Đã chuyển mô hình tự động: {response.attempts.map((attempt) => PROVIDERS.find((item) => item.id === attempt.provider)?.name).join(' → ')}</div>}
+            {response.attempts.length > 1 && <div className="fallback-trace"><RefreshCw size={14} /> Đã chuyển mô hình tự động: {response.attempts.map((attempt) => `${PROVIDERS.find((item) => item.id === attempt.provider)?.name}${attempt.error ? ` (${attempt.error})` : ''}`).join(' → ')}</div>}
             <DetailGrid analysis={response.result} />
             <ResultBlock title="Prompt tiếng Việt" text={response.result.promptVi} onCopy={onCopy} highlighted />
             <ResultBlock title="Prompt tiếng Anh" text={response.result.promptEn} onCopy={onCopy} />
