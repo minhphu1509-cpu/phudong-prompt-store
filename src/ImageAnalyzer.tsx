@@ -15,9 +15,9 @@ const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 const MAX_DATA_URL_LENGTH = 3_000_000
 
 const PROVIDERS: Array<{ id: ProviderId; name: string; accent: string; defaultModel: string; keyHint: string }> = [
-  { id: 'openai', name: 'OpenAI', accent: 'OA', defaultModel: 'gpt-5.6', keyHint: 'sk-…' },
-  { id: 'gemini', name: 'Google Gemini', accent: 'G', defaultModel: 'gemini-3.5-flash', keyHint: 'AIza…' },
-  { id: 'anthropic', name: 'Anthropic Claude', accent: 'C', defaultModel: 'claude-sonnet-5', keyHint: 'sk-ant-…' },
+  { id: 'openai', name: 'OpenAI', accent: 'OA', defaultModel: 'gpt-4o-mini', keyHint: 'sk-…' },
+  { id: 'gemini', name: 'Google Gemini', accent: 'G', defaultModel: 'gemini-2.5-flash', keyHint: 'AIza…' },
+  { id: 'anthropic', name: 'Anthropic Claude', accent: 'C', defaultModel: 'claude-haiku-4-5', keyHint: 'sk-ant-…' },
 ]
 
 const MODEL_SUGGESTIONS: Record<ProviderId, string[]> = {
@@ -27,9 +27,9 @@ const MODEL_SUGGESTIONS: Record<ProviderId, string[]> = {
 }
 
 const EMPTY_PROVIDERS: ProviderState = {
-  openai: { apiKey: '', model: 'gpt-5.6', enabled: true },
-  gemini: { apiKey: '', model: 'gemini-3.5-flash', enabled: true },
-  anthropic: { apiKey: '', model: 'claude-sonnet-5', enabled: true },
+  openai: { apiKey: '', model: 'gpt-4o-mini', enabled: true },
+  gemini: { apiKey: '', model: 'gemini-2.5-flash', enabled: true },
+  anthropic: { apiKey: '', model: 'claude-haiku-4-5', enabled: true },
 }
 
 const MODE_LABELS: Record<AnalysisMode, string> = {
@@ -128,7 +128,7 @@ export default function ImageAnalyzer({ onCopy }: { onCopy: (text: string) => vo
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [response, setResponse] = useState<AnalysisResponse | null>(null)
-  const [providerTests, setProviderTests] = useState<Partial<Record<ProviderId, { loading: boolean; ok?: boolean; message?: string }>>>({})
+  const [providerTests, setProviderTests] = useState<Partial<Record<ProviderId, { loading: boolean; ok?: boolean; message?: string; suggestedModel?: string }>>>({})
 
   useEffect(() => {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(providers))
@@ -149,8 +149,8 @@ export default function ImageAnalyzer({ onCopy }: { onCopy: (text: string) => vo
     setProviderTests((tests) => ({ ...tests, [id]: { loading: true } }))
     try {
       const request = await fetch('/api/test-provider', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider: id, model: current.model.trim(), apiKey: current.apiKey.trim() }) })
-      const payload = await request.json() as { ok?: boolean; message?: string; error?: string }
-      setProviderTests((tests) => ({ ...tests, [id]: { loading: false, ok: request.ok && payload.ok, message: payload.message || payload.error || 'Không thể kiểm tra kết nối' } }))
+      const payload = await request.json() as { ok?: boolean; message?: string; error?: string; suggestedModel?: string }
+      setProviderTests((tests) => ({ ...tests, [id]: { loading: false, ok: request.ok && payload.ok, message: payload.message || payload.error || 'Không thể kiểm tra kết nối', suggestedModel: payload.suggestedModel } }))
     } catch {
       setProviderTests((tests) => ({ ...tests, [id]: { loading: false, ok: false, message: 'Không gọi được API kiểm tra trên Vercel' } }))
     }
@@ -262,6 +262,7 @@ export default function ImageAnalyzer({ onCopy }: { onCopy: (text: string) => vo
               <div className={`provider-test ${providerTests[provider.id]?.ok === true ? 'success' : providerTests[provider.id]?.ok === false ? 'failed' : ''}`}>
                 <button onClick={() => void testProvider(provider.id)} disabled={providerTests[provider.id]?.loading}>{providerTests[provider.id]?.loading ? <LoaderCircle className="spinning" size={13} /> : <RefreshCw size={13} />} Kiểm tra API</button>
                 {providerTests[provider.id]?.message && <span>{providerTests[provider.id]?.message}</span>}
+                {providerTests[provider.id]?.suggestedModel && <button className="model-suggestion" onClick={() => { updateProvider(provider.id, { model: providerTests[provider.id]?.suggestedModel ?? provider.defaultModel }); setProviderTests((tests) => ({ ...tests, [provider.id]: undefined })) }}>Dùng {providerTests[provider.id]?.suggestedModel}</button>}
               </div>
             </article>)}</div>
             <p className="provider-note"><LockKeyhole size={14} /> Không lưu key vào GitHub, Vercel hay localStorage. Đóng tab sẽ xóa cấu hình phiên.</p>
