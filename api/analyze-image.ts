@@ -33,6 +33,24 @@ const FALLBACK_MODELS: Record<ProviderId, string> = {
   anthropic: 'claude-haiku-4-5',
 }
 
+const GEMINI_RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  required: ['summary', 'context', 'lighting', 'promptVi', 'promptEn', 'negativePrompt', 'recommendedSettings'],
+  properties: {
+    summary: { type: 'STRING' },
+    context: { type: 'OBJECT', required: ['sceneType', 'setting', 'backgroundElements', 'groundCondition', 'vegetation', 'weather', 'timeOfDay', 'atmosphere'], properties: {
+      sceneType: { type: 'STRING' }, setting: { type: 'STRING' }, backgroundElements: { type: 'STRING' }, groundCondition: { type: 'STRING' },
+      vegetation: { type: 'STRING' }, weather: { type: 'STRING' }, timeOfDay: { type: 'STRING' }, atmosphere: { type: 'STRING' },
+    } },
+    lighting: { type: 'OBJECT', required: ['primarySource', 'direction', 'quality', 'colorTemperature', 'contrast', 'shadows', 'atmosphere'], properties: {
+      primarySource: { type: 'STRING' }, direction: { type: 'STRING' }, quality: { type: 'STRING' }, colorTemperature: { type: 'STRING' },
+      contrast: { type: 'STRING' }, shadows: { type: 'STRING' }, atmosphere: { type: 'STRING' },
+    } },
+    promptVi: { type: 'STRING' }, promptEn: { type: 'STRING' }, negativePrompt: { type: 'STRING' },
+    recommendedSettings: { type: 'OBJECT', required: ['aspectRatio', 'mood'], properties: { aspectRatio: { type: 'STRING' }, mood: { type: 'STRING' } } },
+  },
+}
+
 class ProviderHttpError extends Error {
   status: number
   providerCode: string
@@ -68,6 +86,7 @@ const providerError = (provider: ProviderId, error: unknown) => {
   if (code === 'provider_429') return 'Đang bị giới hạn tốc độ; hãy chờ rồi thử lại'
   if (/provider_5\d\d/.test(code)) return 'Máy chủ nhà cung cấp đang tạm thời gián đoạn'
   if (code === 'invalid_output') return 'Model phản hồi sai định dạng JSON'
+  if (code === 'output_truncated') return 'Phản hồi của model bị cắt do vượt giới hạn đầu ra'
   if (code === 'invalid_image') return 'Model không đọc được định dạng ảnh'
   if (code === 'timeout' || code.includes('abort')) return 'Kết nối tới model quá thời gian'
   return `Không thể kết nối tới ${provider}`
@@ -215,11 +234,12 @@ async function callGemini(item: ProviderRequest, imageData: string, instruction:
     headers: { 'x-goog-api-key': item.apiKey, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ inline_data: { mime_type: mimeType, data: base64 } }, { text: instruction }] }],
-      generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 2200, temperature: 0.25 },
+      generationConfig: { responseMimeType: 'application/json', responseSchema: GEMINI_RESPONSE_SCHEMA, maxOutputTokens: 4096, temperature: 0.1 },
     }),
   })
   if (!response.ok) await throwProviderError(response)
-  const payload = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; modelVersion?: string }
+  const payload = await response.json() as { candidates?: Array<{ finishReason?: string; content?: { parts?: Array<{ text?: string }> } }>; modelVersion?: string }
+  if (payload.candidates?.[0]?.finishReason === 'MAX_TOKENS') throw new Error('output_truncated')
   const text = payload.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('')
   if (!text) throw new Error('invalid_output')
   return { text, model: payload.modelVersion || item.model }
