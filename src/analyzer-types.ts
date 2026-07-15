@@ -42,5 +42,5 @@ export type AnalysisResponse = {
   result: SceneAnalysis
   providerUsed: ProviderId
   modelUsed: string
-  attempts: Array<{ provider: ProviderId; status: 'failed' | 'success'; error?: string }>
+  attempts: Array<{ provider: ProviderId; status: 'failed' | 'success'; model?: string; error?: string }>
 }
