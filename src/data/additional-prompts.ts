@@ -77,4 +77,64 @@ const interiorPrompts = interiors.map((title, index) => base(
 
 const editPrompts = edits.map((item, index) => base(item.title, 295 + index, 'Chỉnh sửa ảnh', item.description, item.prompt))
 
-export const additionalPrompts: PromptItem[] = [...architecturePrompts, ...interiorPrompts, ...editPrompts]
+const architectureTypes = [
+  'Nhà phố mặt tiền hẹp','Biệt thự sân vườn','Biệt thự nghỉ dưỡng ven biển','Nhà ở trên triền dốc','Chung cư cao tầng',
+  'Khách sạn boutique','Resort sinh thái','Khu nghỉ dưỡng khoáng nóng','Cao ốc văn phòng','Trụ sở doanh nghiệp',
+  'Trường học liên cấp','Thư viện cộng đồng','Bảo tàng nghệ thuật','Trung tâm văn hóa','Nhà hàng sân vườn',
+  'Quán cà phê đô thị','Trung tâm thương mại','Nhà ga hành khách','Công trình tâm linh Việt Nam','Khu phức hợp đa chức năng',
+]
+
+const architectureDirections = [
+  { name: 'Hiện đại nhiệt đới', material: 'bê tông trần, đá địa phương, gỗ ngoài trời và mảng xanh nhiệt đới', light: 'nắng sớm xiên nhẹ' },
+  { name: 'Tối giản đương đại', material: 'vữa khoáng sáng, kính low-e, kim loại sơn mờ và chi tiết âm', light: 'ánh sáng ban ngày khuếch tán' },
+  { name: 'Bản địa đương đại', material: 'gạch đất nung, đá tự nhiên, gỗ và cấu kiện thủ công địa phương', light: 'golden hour ấm dịu' },
+  { name: 'Sinh thái bền vững', material: 'vật liệu tái tạo, lam chắn nắng, mái xanh và bề mặt thấm nước', light: 'trời quang sau mưa' },
+  { name: 'Sang trọng tiết chế', material: 'đá sáng khổ lớn, kính trong, kim loại champagne và gỗ tối màu', light: 'blue hour kết hợp đèn kiến trúc 3000K' },
+]
+
+const interiorTypes = [
+  'Phòng khách biệt thự','Phòng khách căn hộ','Bếp có đảo trung tâm','Phòng ăn gia đình','Phòng ngủ master',
+  'Phòng ngủ trẻ em','Phòng tắm master','Phòng thay đồ walk-in','Phòng làm việc tại gia','Phòng sinh hoạt chung',
+  'Sảnh khách sạn','Phòng khách sạn cao cấp','Nhà hàng fine dining','Quán cà phê nhỏ','Văn phòng mở',
+  'Phòng họp lãnh đạo','Không gian co-working','Showroom nội thất','Cửa hàng thời trang','Spa trị liệu',
+]
+
+const interiorDirections = [
+  { name: 'Modern Luxury', palette: 'đá sáng vân nhẹ, veneer gỗ tối, kim loại champagne và vải trung tính', light: 'ánh sáng tự nhiên cân bằng đèn 3000K' },
+  { name: 'Japandi', palette: 'gỗ sồi sáng, vữa khoáng, vải linen và đồ thủ công tối giản', light: 'ánh sáng cửa sổ mềm và gián tiếp' },
+  { name: 'Indochine đương đại', palette: 'gỗ nâu ấm, mây đan, gạch họa tiết tiết chế và màu xanh sâu', light: 'ánh sáng ấm phân lớp 2700K–3000K' },
+  { name: 'Minimal Warm', palette: 'gỗ tự nhiên, travertine, vải bouclé và bảng màu kem ấm', light: 'ánh sáng khuếch tán không chói' },
+  { name: 'Biophilic', palette: 'gỗ, đá nhám, cây xanh nội thất, vật liệu tự nhiên và màu đất', light: 'ánh sáng trời giàu chiều sâu kết hợp hắt khe' },
+]
+
+const newArchitecturePrompts = architectureTypes.flatMap((building, buildingIndex) => architectureDirections.map((direction, directionIndex) => {
+  const number = 301 + buildingIndex * architectureDirections.length + directionIndex
+  const title = `${building} — ${direction.name}`
+  return base(
+    title,
+    number,
+    'Kiến trúc — Thiết kế chuyên sâu',
+    `Phát triển ý tưởng ${building.toLowerCase()} theo phong cách ${direction.name.toLowerCase()}, phù hợp khí hậu và bối cảnh Việt Nam.`,
+    `Thiết kế ${building.toLowerCase()} theo phong cách ${direction.name}. Dữ liệu đầu vào gồm khu đất, công năng, hướng nắng và ảnh/mô hình nguồn. Giữ đúng ranh đất, cao độ, số tầng, diện tích và các yêu cầu công năng bắt buộc; tổ chức giao thông rõ ràng, thông gió chéo, che nắng hợp lý và tỷ lệ kiến trúc tinh tế. Ngôn ngữ vật liệu: ${direction.material}. Bối cảnh {argument name="bối cảnh" default="khu đô thị Việt Nam hiện đại"}; ánh sáng ${direction.light}; góc nhìn {argument name="camera" default="eye-level 28mm, vertical lines thẳng"}. Tạo phối cảnh photorealistic giàu chiều sâu, vật liệu PBR đúng tỷ lệ, cảnh quan phù hợp khí hậu; không tự thêm tầng, không đảo gương, không làm sai kết cấu, không chữ, không watermark.`,
+  )
+}))
+
+const newInteriorPrompts = interiorTypes.flatMap((space, spaceIndex) => interiorDirections.map((direction, directionIndex) => {
+  const number = 401 + spaceIndex * interiorDirections.length + directionIndex
+  const title = `${space} — ${direction.name}`
+  return base(
+    title,
+    number,
+    'Nội thất — Thiết kế chuyên sâu',
+    `Thiết kế ${space.toLowerCase()} theo phong cách ${direction.name}, chú trọng công năng, ánh sáng và cảm giác vật liệu.`,
+    `Thiết kế ${space.toLowerCase()} theo phong cách ${direction.name}. Giữ nguyên tường, cột, trần, sàn, cửa, cao độ, kích thước thực tế, công năng và camera từ ảnh/mô hình nguồn; bố trí lối đi thông thoáng, ergonomics chính xác, đồ nội thất đúng tỷ lệ và có khả năng thi công. Bảng vật liệu: ${direction.palette}. Tổ chức ${direction.light}, CRI cao, kiểm soát chói và bóng đổ tự nhiên. Điểm nhấn {argument name="điểm nhấn" default="một tác phẩm nghệ thuật tối giản"}; mức trang trí {argument name="trang trí" default="tiết chế"}; ống kính 24mm, vertical lines thẳng, editorial interior photography, photorealistic. Không làm rộng sai không gian, không di chuyển kết cấu, không nhân bản đồ vật, không chữ, không watermark.`,
+  )
+}))
+
+export const additionalPrompts: PromptItem[] = [
+  ...architecturePrompts,
+  ...interiorPrompts,
+  ...editPrompts,
+  ...newArchitecturePrompts,
+  ...newInteriorPrompts,
+]
