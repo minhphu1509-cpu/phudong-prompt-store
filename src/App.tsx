@@ -117,7 +117,7 @@ function Header({ query, setQuery, favoriteCount, showFavorites, setShowFavorite
       </label>
       <nav className="header-actions" aria-label="Điều hướng chính">
         <button className={`header-task header-task-primary ${activeView === 'tools' ? 'active' : ''}`} onClick={() => onNavigate('tools')}><WandSparkles size={17} /><span><strong>Công cụ AI</strong><small>Tạo ảnh & prompt</small></span></button>
-        <button className={`header-task header-task-library ${activeView === 'library' && !showFavorites ? 'active' : ''}`} onClick={() => onNavigate('library')}><Library size={17} /><span><strong>Thư viện prompt</strong><small>300 mẫu tuyển chọn</small></span></button>
+        <button className={`header-task header-task-library ${activeView === 'library' && !showFavorites ? 'active' : ''}`} onClick={() => onNavigate('library')}><Library size={17} /><span><strong>Thư viện prompt</strong><small>500 mẫu tuyển chọn</small></span></button>
         <button className={`favorites-button ${showFavorites ? 'active' : ''}`} onClick={() => { setShowFavorites(!showFavorites); onNavigate('library') }}>
           <Heart size={17} fill={showFavorites ? 'currentColor' : 'none'} />
           <span>Đã lưu</span><b>{favoriteCount}</b>
