@@ -21,22 +21,51 @@ type VercelResponseLike = {
 }
 
 type ProviderResult = { text: string; model: string }
-type Attempt = { provider: ProviderId; status: 'failed' | 'success'; error?: string }
+type Attempt = { provider: ProviderId; status: 'failed' | 'success'; model?: string; error?: string }
 
 const MAX_IMAGE_LENGTH = 3_100_000
 const PROVIDERS = new Set<ProviderId>(['openai', 'gemini', 'anthropic'])
 const MODES = new Set<AnalysisMode>(['full', 'context', 'lighting'])
 const MODEL_PATTERN = /^[a-zA-Z0-9._:/-]{1,120}$/
+const FALLBACK_MODELS: Record<ProviderId, string> = {
+  openai: 'gpt-4o-mini',
+  gemini: 'gemini-2.5-flash',
+  anthropic: 'claude-haiku-4-5',
+}
+
+class ProviderHttpError extends Error {
+  status: number
+  providerCode: string
+
+  constructor(status: number, providerCode = '') {
+    super(`provider_${status}`)
+    this.name = 'ProviderHttpError'
+    this.status = status
+    this.providerCode = providerCode
+  }
+}
+
+async function throwProviderError(response: globalThis.Response): Promise<never> {
+  let providerCode = ''
+  try {
+    const payload = await response.json() as { error?: { code?: string; status?: string; type?: string } }
+    providerCode = String(payload.error?.code || payload.error?.status || payload.error?.type || '')
+  } catch { /* Nhà cung cấp có thể trả về body rỗng hoặc không phải JSON. */ }
+  throw new ProviderHttpError(response.status, providerCode)
+}
 
 const providerError = (provider: ProviderId, error: unknown) => {
   const code = error instanceof Error ? error.message : 'unknown'
+  const providerCode = error instanceof ProviderHttpError ? error.providerCode.toLowerCase() : ''
   if (error instanceof Error && error.name === 'AbortError') return 'Kết nối quá thời gian 48 giây'
   if (error instanceof TypeError || /fetch|network|ENOTFOUND|ECONN/i.test(code)) return 'Vercel không kết nối được tới máy chủ nhà cung cấp'
   if (code === 'provider_400') return 'Yêu cầu hoặc cấu hình model không được hỗ trợ'
   if (code === 'provider_401') return 'API key không hợp lệ hoặc đã hết hiệu lực'
   if (code === 'provider_403') return 'API key chưa có quyền dùng model hoặc khu vực bị hạn chế'
   if (code === 'provider_404') return 'Không tìm thấy model; hãy kiểm tra đúng tên model'
-  if (code === 'provider_429') return 'Đã hết hạn mức, credit hoặc đang bị giới hạn tốc độ'
+  if (code === 'provider_429' && /insufficient_quota|billing|quota/.test(providerCode)) return 'API key hợp lệ nhưng tài khoản đã hết credit hoặc chạm giới hạn chi tiêu'
+  if (code === 'provider_429' && /resource_exhausted/.test(providerCode)) return 'Đã hết hạn mức miễn phí hoặc quota của model trong ngày'
+  if (code === 'provider_429') return 'Đang bị giới hạn tốc độ; hãy chờ rồi thử lại'
   if (/provider_5\d\d/.test(code)) return 'Máy chủ nhà cung cấp đang tạm thời gián đoạn'
   if (code === 'invalid_output') return 'Model phản hồi sai định dạng JSON'
   if (code === 'invalid_image') return 'Model không đọc được định dạng ảnh'
@@ -171,7 +200,7 @@ async function callOpenAI(item: ProviderRequest, imageData: string, instruction:
       max_completion_tokens: 2200,
     }),
   })
-  if (!response.ok) throw new Error(`provider_${response.status}`)
+  if (!response.ok) await throwProviderError(response)
   const payload = await response.json() as { model?: string; choices?: Array<{ message?: { content?: string } }> }
   const text = payload.choices?.[0]?.message?.content
   if (!text) throw new Error('invalid_output')
@@ -189,7 +218,7 @@ async function callGemini(item: ProviderRequest, imageData: string, instruction:
       generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 2200, temperature: 0.25 },
     }),
   })
-  if (!response.ok) throw new Error(`provider_${response.status}`)
+  if (!response.ok) await throwProviderError(response)
   const payload = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; modelVersion?: string }
   const text = payload.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('')
   if (!text) throw new Error('invalid_output')
@@ -211,7 +240,7 @@ async function callAnthropic(item: ProviderRequest, imageData: string, instructi
       ] }],
     }),
   })
-  if (!response.ok) throw new Error(`provider_${response.status}`)
+  if (!response.ok) await throwProviderError(response)
   const payload = await response.json() as { model?: string; content?: Array<{ type?: string; text?: string }> }
   const text = payload.content?.filter((block) => block.type === 'text').map((block) => block.text ?? '').join('')
   if (!text) throw new Error('invalid_output')
@@ -223,6 +252,8 @@ async function callProvider(item: ProviderRequest, imageData: string, instructio
   if (item.provider === 'gemini') return callGemini(item, imageData, instruction)
   return callAnthropic(item, imageData, instruction)
 }
+
+const retryableModelError = (error: unknown) => error instanceof ProviderHttpError && [400, 403, 404].includes(error.status)
 
 export const config = { maxDuration: 60 }
 
@@ -247,13 +278,18 @@ export default async function handler(request: VercelRequestLike, response: Verc
   const attempts: Attempt[] = []
   const instruction = buildInstruction(mode)
   for (const item of validQueue) {
-    try {
-      const providerResult = await callProvider(item, body.imageData, instruction)
-      const result = normalizeResult(extractJson(providerResult.text))
-      attempts.push({ provider: item.provider, status: 'success' })
-      return response.status(200).json({ result, providerUsed: item.provider, modelUsed: providerResult.model, attempts })
-    } catch (error) {
-      attempts.push({ provider: item.provider, status: 'failed', error: providerError(item.provider, error) })
+    const models = [...new Set([item.model, FALLBACK_MODELS[item.provider]])]
+    for (const model of models) {
+      const candidate = { ...item, model }
+      try {
+        const providerResult = await callProvider(candidate, body.imageData, instruction)
+        const result = normalizeResult(extractJson(providerResult.text))
+        attempts.push({ provider: item.provider, model, status: 'success' })
+        return response.status(200).json({ result, providerUsed: item.provider, modelUsed: providerResult.model, attempts })
+      } catch (error) {
+        attempts.push({ provider: item.provider, model, status: 'failed', error: providerError(item.provider, error) })
+        if (!retryableModelError(error)) break
+      }
     }
   }
 
