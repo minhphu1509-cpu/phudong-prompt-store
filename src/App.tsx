@@ -61,14 +61,14 @@ function WelcomeScreen({ onClose }: { onClose: () => void }) {
         </section>
         <section className="welcome-showcase" aria-label="Hình ảnh demo">
           <div className="welcome-main-image">
-            <img src="/images/welcome-architecture.png" alt="Phối cảnh biệt thự hiện đại nhiệt đới vào blue hour" width="1672" height="941" fetchPriority="high" />
-            <span>AI Architectural Visualization <b>01</b></span>
+            <img src="/images/welcome-design-board.webp" alt="Đồ án tổng hợp kiến trúc, nội thất và quy hoạch" width="1600" height="900" fetchPriority="high" />
+            <span>Architecture · Interior · Masterplan <b>01</b></span>
           </div>
           <div className="welcome-mini-images">
-            <figure><img src="/images/welcome-architecture.png" alt="" width="1672" height="941" /><figcaption><Camera size={13} /> Photorealistic</figcaption></figure>
-            <figure><img src="/images/welcome-architecture.png" alt="" width="1672" height="941" /><figcaption><Building2 size={13} /> Strict geometry</figcaption></figure>
+            <figure><img src="/images/welcome-design-board.webp" alt="" width="1600" height="900" /><figcaption><Camera size={13} /> Kiến trúc & nội thất</figcaption></figure>
+            <figure><img src="/images/welcome-design-board.webp" alt="" width="1600" height="900" /><figcaption><Building2 size={13} /> Quy hoạch tổng thể</figcaption></figure>
           </div>
-          <div className="welcome-image-note"><i /><span><strong>AI IMAGE LAB</strong> Không gian · Vật liệu · Ánh sáng</span></div>
+          <div className="welcome-image-note"><i /><span><strong>AI DESIGN LAB</strong> Kiến trúc · Nội thất · Quy hoạch</span></div>
         </section>
       </div>
     </div>
