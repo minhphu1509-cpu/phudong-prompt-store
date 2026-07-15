@@ -4,12 +4,15 @@ type Request = { method?: string; body?: Body | string }
 type Response = { status: (code: number) => Response; json: (body: unknown) => void; setHeader: (name: string, value: string) => void }
 
 const MODEL_PATTERN = /^[a-zA-Z0-9._:/-]{1,120}$/
-const messageFor = (status: number) => {
+const SUGGESTED: Record<ProviderId,string> = { openai: 'gpt-4o-mini', gemini: 'gemini-2.5-flash', anthropic: 'claude-haiku-4-5' }
+const messageFor = (status: number, providerCode = '') => {
   if (status === 400) return 'Yêu cầu hoặc tên model không hợp lệ'
   if (status === 401) return 'API key không hợp lệ hoặc đã hết hiệu lực'
   if (status === 403) return 'API key chưa có quyền truy cập model hoặc khu vực bị hạn chế'
   if (status === 404) return 'Không tìm thấy model trong tài khoản này'
-  if (status === 429) return 'Tài khoản đã hết hạn mức hoặc đang bị giới hạn tốc độ'
+  if (status === 429 && /insufficient_quota|billing|quota/i.test(providerCode)) return 'API key hợp lệ nhưng tài khoản đã hết credit hoặc chạm giới hạn chi tiêu'
+  if (status === 429 && /resource_exhausted/i.test(providerCode)) return 'Đã hết hạn mức miễn phí hoặc quota của model trong ngày'
+  if (status === 429) return 'API key hợp lệ nhưng đang bị giới hạn tốc độ; hãy thử lại sau'
   if (status >= 500) return 'Máy chủ nhà cung cấp đang tạm thời gián đoạn'
   return `Nhà cung cấp phản hồi mã ${status}`
 }
@@ -18,13 +21,20 @@ async function check(provider: ProviderId, model: string, apiKey: string) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 15_000)
   try {
-    const config = provider === 'openai'
+    const config: { url: string; headers: Record<string, string> } = provider === 'openai'
       ? { url: `https://api.openai.com/v1/models/${encodeURIComponent(model)}`, headers: { Authorization: `Bearer ${apiKey}` } }
       : provider === 'gemini'
         ? { url: `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}`, headers: { 'x-goog-api-key': apiKey } }
         : { url: `https://api.anthropic.com/v1/models/${encodeURIComponent(model)}`, headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' } }
     const response = await fetch(config.url, { headers: config.headers, signal: controller.signal })
-    if (!response.ok) return { ok: false, status: response.status, message: messageFor(response.status) }
+    if (!response.ok) {
+      let providerCode = ''
+      try {
+        const payload = await response.json() as { error?: { code?: string; status?: string; type?: string } }
+        providerCode = String(payload.error?.code || payload.error?.status || payload.error?.type || '')
+      } catch { /* Phản hồi có thể không chứa JSON. */ }
+      return { ok: false, status: response.status, message: messageFor(response.status, providerCode), suggestedModel: response.status === 404 || response.status === 403 ? SUGGESTED[provider] : undefined }
+    }
     return { ok: true, status: response.status, message: `Kết nối thành công với ${model}` }
   } catch (error) {
     const timeoutError = error instanceof Error && error.name === 'AbortError'
