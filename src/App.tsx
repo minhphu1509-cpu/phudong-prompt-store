@@ -46,11 +46,11 @@ function WelcomeScreen({ onClose }: { onClose: () => void }) {
           <div className="welcome-brand"><BrandMark /><span><strong>AI Architecture</strong><small>Studio · by PhuDong AI</small></span></div>
           <span className="welcome-kicker"><Sparkles size={13} /> Creative intelligence for architecture</span>
           <h1 id="welcome-title">Biến ý tưởng thành<br /><em>không gian sống động.</em></h1>
-          <p>Nền tảng AI dành cho kiến trúc sư và nhà thiết kế Việt Nam — tạo phối cảnh chân thực, phân tích hình ảnh và khai thác 300 prompt chuyên sâu trong một không gian làm việc.</p>
+          <p>Nền tảng AI dành cho kiến trúc sư và nhà thiết kế Việt Nam — tạo phối cảnh chân thực, phân tích hình ảnh và khai thác 500 prompt chuyên sâu trong một không gian làm việc.</p>
           <div className="welcome-features">
             <article><Images size={19} /><span><strong>Tạo ảnh phối cảnh</strong><small>Từ phác thảo và mô hình 3D</small></span></article>
             <article><MessageSquareText size={19} /><span><strong>Prompt từ hình ảnh</strong><small>Phân tích bối cảnh và ánh sáng</small></span></article>
-            <article><Library size={19} /><span><strong>300 prompt tuyển chọn</strong><small>Kiến trúc, nội thất và sáng tạo</small></span></article>
+            <article><Library size={19} /><span><strong>500 prompt tuyển chọn</strong><small>Kiến trúc, nội thất và sáng tạo</small></span></article>
           </div>
           <div className="welcome-actions">
             <button className="welcome-primary" onClick={onClose}>Khám phá Studio <ArrowRight size={17} /></button>
@@ -60,10 +60,13 @@ function WelcomeScreen({ onClose }: { onClose: () => void }) {
           <small className="welcome-credit">Developed with precision by <strong>PhuDong AI</strong></small>
         </section>
         <section className="welcome-showcase" aria-label="Hình ảnh demo">
-          <div className="welcome-main-image"><img src="/images/welcome-architecture.png" alt="Phối cảnh biệt thự hiện đại nhiệt đới vào blue hour" /><span>AI Architectural Visualization <b>01</b></span></div>
+          <div className="welcome-main-image">
+            <img src="/images/welcome-architecture.png" alt="Phối cảnh biệt thự hiện đại nhiệt đới vào blue hour" width="1672" height="941" fetchPriority="high" />
+            <span>AI Architectural Visualization <b>01</b></span>
+          </div>
           <div className="welcome-mini-images">
-            <figure><img src="/images/welcome-architecture.png" alt="" /><figcaption><Camera size={13} /> Photorealistic</figcaption></figure>
-            <figure><img src="/images/welcome-architecture.png" alt="" /><figcaption><Building2 size={13} /> Strict geometry</figcaption></figure>
+            <figure><img src="/images/welcome-architecture.png" alt="" width="1672" height="941" /><figcaption><Camera size={13} /> Photorealistic</figcaption></figure>
+            <figure><img src="/images/welcome-architecture.png" alt="" width="1672" height="941" /><figcaption><Building2 size={13} /> Strict geometry</figcaption></figure>
           </div>
           <div className="welcome-image-note"><i /><span><strong>AI IMAGE LAB</strong> Không gian · Vật liệu · Ánh sáng</span></div>
         </section>
